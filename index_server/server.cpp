@@ -27,12 +27,16 @@ int main(int, char**) {
     std::cout << "Server started\n";
 
     try{
-        std::filesystem::current_path("D:/coding/c_c++/concurrent_index_course_work/datasets/data");
+        std::cout << "enter path to text files:" << std::endl;
+        std::string input_path;
+        std::cin >> input_path;
 
         Index index(500);
-        index.createFromDirectory("./aclImdb/test/neg");
-        index.save("D:/coding/c_c++/concurrent_index_course_work/test.index");
-        return 0;
+        index.createFromDirectory(input_path);
+
+        // std::filesystem::current_path("D:/coding/c_c++/concurrent_index_course_work/datasets/data");
+        // index.createFromDirectory("./aclImdb/test/neg");
+        // index.load("D:/coding/c_c++/concurrent_index_course_work/test.index");
         
         std::string query;
         do {

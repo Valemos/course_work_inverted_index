@@ -27,7 +27,6 @@ void Index::createFromDirectory(const std::string& directory_path)
     for (auto& entry : fs::recursive_directory_iterator(directory_path)) {
         if (entry.is_regular_file()) {
             addFile(entry.path().string());
-            break;
         }
     }
 }
