@@ -7,30 +7,49 @@
 #include <vector>
 #include <fstream>
 
+#include <boost/serialization/access.hpp>
+
+#include "TermPosition.h"
+
 
 class Index {
+    friend class boost::serialization::access;
 
 public:
     Index() = default;
     Index(size_t total_files);
 
-    void createFromDirectory(std::string directory_path);
-    void addFile(std::string path);
+    void createFromDirectory(const std::string& directory_path);
+    void addFile(const std::string& path);
 
-    void save(std::string path);
-    void load(std::string path);
+    std::vector<TermPosition> find(const std::string& query) const;
+
+    // contextRaduis controls number of characters displayed around target term
+    void displayResults(const std::vector<TermPosition>& positions) const;
+
+    void save(std::string path) const;
+    static Index load(std::string path);
+
 
 private:
-    struct TermPosition {
-        int document_index;
-        std::streampos word_position;
-    };
-
     std::vector<std::string> document_paths_;
     std::map<std::string, std::list<TermPosition>> term_positions_;
 
     void addTerm(const std::string& word, TermPosition position);
-    std::string normalizeToken(const std::string& word);
+    std::string normalizeToken(const std::string& word) const;
+    std::string readTermContext(const std::string& file_path, std::streamoff first_letter, int context_radius) const;
+
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version);
 };
+
+
+template<class Archive>
+void Index::serialize(Archive &ar, const unsigned int version) 
+{
+    ar & document_paths_;
+    ar & term_positions_;
+}
+
 
 #endif // __INDEX_H__

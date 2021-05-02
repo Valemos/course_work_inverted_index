@@ -1,9 +1,18 @@
 #include "Index.h"
 
 #include <boost/log/trivial.hpp>
+
 #include <filesystem>
 #include <iostream>
 #include <sstream>
+#include <utility>
+#include <fstream>
+
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/list.hpp>
 
 namespace fs = std::filesystem;
 
@@ -13,7 +22,7 @@ Index::Index(size_t total_files)
     document_paths_.reserve(total_files);
 }
 
-void Index::createFromDirectory(std::string directory_path) 
+void Index::createFromDirectory(const std::string& directory_path) 
 {
     for (auto& entry : fs::recursive_directory_iterator(directory_path)) {
         if (entry.is_regular_file()) {
@@ -23,7 +32,7 @@ void Index::createFromDirectory(std::string directory_path)
     }
 }
 
-void Index::addFile(std::string path) 
+void Index::addFile(const std::string& path) 
 {
     BOOST_LOG_TRIVIAL(info) << path;
 
@@ -49,6 +58,63 @@ void Index::addFile(std::string path)
     }
 }
 
+std::vector<TermPosition> Index::find(const std::string& query) const
+{
+    std::vector<TermPosition> results;
+
+    auto map_position = term_positions_.find(query);
+    if (map_position != term_positions_.end()) {
+        auto& terms_list = map_position->second;
+        results.insert(results.end(), terms_list.begin(), terms_list.end());
+    }
+
+    return results;
+}
+
+void Index::displayResults(const std::vector<TermPosition>& positions) const
+{
+    int result_index = 1;
+    const std::string* prev_document_path {nullptr};
+    for (auto& position : positions) {
+        // document path
+        auto* cur_document_path = &document_paths_[position.document_index];
+        if (cur_document_path != prev_document_path) {
+            std::cout << "for path " << *cur_document_path << std::endl;
+            prev_document_path = cur_document_path;
+        }
+
+        // word position and surroundings
+        std::cout << result_index++ << "\t..." 
+                << readTermContext(*cur_document_path, position.term_start, 20) 
+                << "..." << std::endl;
+    }
+}
+
+void Index::save(std::string path) const
+{
+    std::ofstream fout {path};
+    if (fout.bad()){
+        BOOST_LOG_TRIVIAL(error) << "cannot save index to file " << path;
+        return;
+    }
+
+    boost::archive::binary_oarchive archive {fout};
+    archive << this;
+}
+
+Index Index::load(std::string path) 
+{
+    std::ifstream fin {path};
+    if (!fin.bad()){
+        boost::archive::binary_iarchive archive {fin};
+        Index index;
+        archive >> index;
+        return index;
+    } else {
+        throw std::runtime_error("cannot read index from file " + path);
+    }
+}
+
 void Index::addTerm(const std::string& word, TermPosition position) 
 {
     auto result = term_positions_.find(word);
@@ -62,7 +128,7 @@ void Index::addTerm(const std::string& word, TermPosition position)
     }
 }
 
-std::string Index::normalizeToken(const std::string& word) 
+std::string Index::normalizeToken(const std::string& word) const
 {
     // preallocate memory for new token
     std::string token;
@@ -82,4 +148,34 @@ std::string Index::normalizeToken(const std::string& word)
     }
 
     return ss.str();
+}
+
+std::string Index::readTermContext(const std::string& file_path, std::streamoff word_start, int context_radius) const
+{
+    auto read_start = std::max(word_start - context_radius, (std::streamoff) 0);
+    auto read_start_size = std::min(word_start, (std::streamoff) context_radius);
+
+    std::stringstream result_stream;
+
+    std::ifstream fin(file_path);
+    if (fin.good()) {
+        fin.seekg(read_start);
+
+        std::string context;
+        context.resize(read_start_size, '\0'); 
+
+        fin.get(&context[0], read_start_size);
+        result_stream << context;
+
+        std::string line;
+        fin >> line;
+        result_stream << line;
+
+        context.replace(0, context.size(), context.size(), '\0');
+        context.resize(context_radius, '\0');
+        fin.get(&context[0], context_radius);
+        result_stream << context;
+    }
+
+    return result_stream.str();
 }

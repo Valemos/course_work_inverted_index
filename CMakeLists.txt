@@ -16,11 +16,11 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR})
 
-add_library(index index/Index.cpp)
+add_library(index_lib index/Index.cpp)
 
 add_executable(client index_client/client.cpp)
 add_executable(server index_server/server.cpp)
-target_link_libraries(server index)
+target_link_libraries(server index_lib)
 
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
