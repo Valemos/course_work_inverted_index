@@ -2,7 +2,6 @@
 
 #include <boost/log/trivial.hpp>
 
-#include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <utility>
@@ -13,8 +12,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
-
-namespace fs = std::filesystem;
+#include <boost/serialization/string.hpp>
 
 
 Index::Index(size_t total_files) 
@@ -22,22 +20,22 @@ Index::Index(size_t total_files)
     document_paths_.reserve(total_files);
 }
 
-void Index::createFromDirectory(const std::string& directory_path) 
+void Index::createFromDirectory(fs::path directory_path) 
 {
-    for (auto& entry : fs::recursive_directory_iterator(directory_path)) {
+    for (auto& entry : fs::recursive_directory_iterator(fs::absolute(directory_path))) {
         if (entry.is_regular_file()) {
             addFile(entry.path().string());
         }
     }
 }
 
-void Index::addFile(const std::string& path) 
+void Index::addFile(fs::path path) 
 {
     BOOST_LOG_TRIVIAL(info) << path;
 
     // path_id is index of document_paths_ vector
     int document_id = (int) document_paths_.size();
-    document_paths_.push_back(path);
+    document_paths_.push_back(path.string());
 
     std::ifstream fin(path);
     if (!fin.bad()) {
@@ -61,7 +59,7 @@ std::vector<TermPosition> Index::find(const std::string& query) const
 {
     std::vector<TermPosition> results;
 
-    auto map_position = term_positions_.find(query);
+    auto map_position = term_positions_.find(normalizeToken(query));
     if (map_position != term_positions_.end()) {
         auto& terms_list = map_position->second;
         results.insert(results.end(), terms_list.begin(), terms_list.end());
@@ -89,28 +87,27 @@ void Index::displayResults(const std::vector<TermPosition>& positions) const
     }
 }
 
-void Index::save(std::string path) const
+void Index::save(fs::path path) const
 {
-    std::ofstream fout {path};
-    if (fout.bad()){
-        BOOST_LOG_TRIVIAL(error) << "cannot save index to file " << path;
-        return;
+    std::ofstream fout {fs::absolute(path), std::ios::binary};
+    if (!fout.bad()){
+        boost::archive::binary_oarchive archive {fout};
+        archive << *this;
+    } else {
+        throw std::runtime_error("cannot save index to file " + path.string());
     }
-
-    boost::archive::binary_oarchive archive {fout};
-    archive << this;
 }
 
-Index Index::load(std::string path) 
+Index Index::load(fs::path path) 
 {
-    std::ifstream fin {path};
+    std::ifstream fin {fs::absolute(path), std::ios::binary};
     if (!fin.bad()){
         boost::archive::binary_iarchive archive {fin};
         Index index;
         archive >> index;
         return index;
     } else {
-        throw std::runtime_error("cannot read index from file " + path);
+        throw std::runtime_error("cannot read index from file " + path.string());
     }
 }
 

@@ -19,32 +19,47 @@ void find(const Index& index, std::string query) {
     }
 }
 
+fs::path getFilesDirectory() {
+    fs::path path;
+    while (true) {
+        std::cout << "enter path to text files:" << std::endl;
+        std::cin >> path;
+        path = fs::absolute(path);
+        if (fs::exists(path)) {
+            return path;
+        }
+
+        std::cout << "path not exists!" << std::endl;
+    };
+} 
+
 int main(int, char**) {
     boost::log::core::get()->set_filter (
-        boost::log::trivial::severity >= boost::log::trivial::info
+        boost::log::trivial::severity >= boost::log::trivial::error
     );
 
     std::cout << "Server started\n";
 
+    fs::current_path(L"D:\\coding\\c_c++\\concurrent_index_course_work");
+
     try{
-        std::cout << "enter path to text files:" << std::endl;
-        std::string input_path;
-        std::cin >> input_path;
-
-        Index index(500);
+        auto input_path = getFilesDirectory();
+        
+        Index index(250);
         index.createFromDirectory(input_path);
+        // index.createFromDirectory("./datasets/data/aclImdb/test/neg");
+        index.save("./test.index");
 
-        // std::filesystem::current_path("D:/coding/c_c++/concurrent_index_course_work/datasets/data");
-        // index.createFromDirectory("./aclImdb/test/neg");
-        // index.load("D:/coding/c_c++/concurrent_index_course_work/test.index");
+        // Index index = Index::load("./test.index");
         
         std::string query;
-        do {
+        while (true) {
             std::cout << "enter query (/q to exit):" << std::endl;
             std::cin >> query;
+            if (query == "/q") break;
             
             find(index, query);    
-        } while(query != "/q");
+        };
 
     } catch (std::exception& err) {
         std::cout << err.what() << std::endl;

@@ -6,10 +6,12 @@
 #include <map>
 #include <vector>
 #include <fstream>
+#include <filesystem>
 
 #include <boost/serialization/access.hpp>
-
 #include "TermPosition.h"
+
+namespace fs = std::filesystem;
 
 
 class Index {
@@ -19,17 +21,17 @@ public:
     Index() = default;
     Index(size_t total_files);
 
-    void createFromDirectory(const std::string& directory_path);
-    void addFile(const std::string& path);
+    void createFromDirectory(fs::path directory_path);
+    void addFile(fs::path path);
 
+    // query must be a single word
     std::vector<TermPosition> find(const std::string& query) const;
 
     // contextRaduis controls number of characters displayed around target term
     void displayResults(const std::vector<TermPosition>& positions) const;
 
-    void save(std::string path) const;
-    static Index load(std::string path);
-
+    void save(fs::path path) const;
+    static Index load(fs::path path);
 
 private:
     std::vector<std::string> document_paths_;
