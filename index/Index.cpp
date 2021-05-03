@@ -175,3 +175,12 @@ std::string Index::readTermContext(const std::string& file_path, std::streamoff 
 
     return result_stream.str();
 }
+
+std::map<int, std::string> Index::getFilePaths(const std::vector<TermPosition>& positions) const
+{
+    std::map<int, std::string> paths;
+    for (auto& pos : positions) {
+        paths.try_emplace(pos.document_index, fs::absolute(document_paths_[pos.document_index]).string());
+    }
+    return paths;
+}

@@ -26,6 +26,7 @@ public:
 
     // query must be a single word
     std::vector<TermPosition> find(const std::string& query) const;
+    std::map<int, std::string> getFilePaths(const std::vector<TermPosition>& positions) const;
 
     // contextRaduis controls number of characters displayed around target term
     void displayResults(const std::vector<TermPosition>& positions) const;

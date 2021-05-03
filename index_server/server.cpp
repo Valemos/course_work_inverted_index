@@ -5,64 +5,52 @@
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
+#include <boost/asio/buffer.hpp>
 
 #include "index/Index.h"
+#include "index_server/SocketListener.h"
 
 
-void find(const Index& index, std::string query) {
-    auto results = index.find(query);
-    if (!results.empty()){
-        std::cout << "results:" << std::endl;
-        index.displayResults(results);
-    } else {
-        std::cout << "query not found" << std::endl;
+void handleClientQueries(Index* index, tcp::socket& sock) {
+    BOOST_LOG_TRIVIAL(info) << "accepted connection from " << sock.remote_endpoint().address().to_string();
+
+    auto results = index->find("alien");
+    auto results_paths = index->getFilePaths(results);
+    if (!results.empty()) {
+        sock.send(boost::asio::buffer(results, results.size()));
+        sock.send(boost::asio::buffer(results_paths, results_paths.size()));
     }
 }
 
-fs::path getFilesDirectory() {
-    fs::path path;
-    while (true) {
-        std::cout << "enter path to text files:" << std::endl;
-        std::cin >> path;
-        path = fs::absolute(path);
-        if (fs::exists(path)) {
-            return path;
-        }
 
-        std::cout << "path not exists!" << std::endl;
-    };
-} 
+fs::path getIndexPath() {
+    return "D:\\coding\\c_c++\\concurrent_index_course_work\\test.index";
+}
+
 
 int main(int, char**) {
-    boost::log::core::get()->set_filter (
-        boost::log::trivial::severity >= boost::log::trivial::error
-    );
-
-    std::cout << "Server started\n";
-
-    fs::current_path(L"D:\\coding\\c_c++\\concurrent_index_course_work");
+    boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::error);
 
     try{
-        auto input_path = getFilesDirectory();
+        [[maybe_unused]] auto index_path = getIndexPath();
         
-        Index index(250);
-        index.createFromDirectory(input_path);
-        // index.createFromDirectory("./datasets/data/aclImdb/test/neg");
-        index.save("./test.index");
+        Index index = Index::load(index_path);
+        auto index_ptr = &index;
 
-        // Index index = Index::load("./test.index");
+        BOOST_LOG_TRIVIAL(info) << "index loaded from " << index_path;
+
+        SocketListener listener {40000};
+        listener.setConnectionHandler(
+            [index_ptr] (auto& sock) { handleClientQueries(index_ptr, sock); }
+        );
         
-        std::string query;
-        while (true) {
-            std::cout << "enter query (/q to exit):" << std::endl;
-            std::cin >> query;
-            if (query == "/q") break;
-            
-            find(index, query);    
-        };
+        // to stop listener from other thread, create command thread before start
+
+        BOOST_LOG_TRIVIAL(info) << "started listening";
+        listener.start();
 
     } catch (std::exception& err) {
-        std::cout << err.what() << std::endl;
+        BOOST_LOG_TRIVIAL(fatal) << err.what() << std::endl;
     }
 
     return 0;
