@@ -14,12 +14,13 @@ class SocketListener
 public:
     SocketListener(unsigned short port);
 
-    void setConnectionHandler(std::function<void(tcp::socket&)> handler);
+    void setConnectionHandler(std::function<void(tcp::socket)> handler);
     void start();
+    void stop();
     void acceptNext();
 
 private:
-    std::function<void(tcp::socket&)> listen_handler_;
+    std::function<void(tcp::socket)> listen_handler_;
 
     // bind at start to reuse lambda expression in acceptNext
     std::function<void(const boost::system::error_code &, tcp::socket)> connection_acceptor_;

@@ -1,4 +1,4 @@
-Project implements index for search in directories with text files
+Project implements index for quick search in directories with text files
 
 CMake is required for build
 

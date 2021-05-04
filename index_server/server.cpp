@@ -5,21 +5,31 @@
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
+
 #include <boost/asio/buffer.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/map.hpp>
 
 #include "index/Index.h"
 #include "index_server/SocketListener.h"
 
+using boost::asio::buffer;
 
-void handleClientQueries(Index* index, tcp::socket& sock) {
+
+void handleClientQueries(Index* index, tcp::socket sock) {
     BOOST_LOG_TRIVIAL(info) << "accepted connection from " << sock.remote_endpoint().address().to_string();
 
-    auto results = index->find("alien");
+    std::string query;
+    sock.receive(buffer(query));
+
+    BOOST_LOG_TRIVIAL(info) << "client query: \"" << query << '"';
+
+    auto results = index->find(query);
     auto results_paths = index->getFilePaths(results);
     if (!results.empty()) {
-        sock.send(boost::asio::buffer(results, results.size()));
-        sock.send(boost::asio::buffer(results_paths, results_paths.size()));
+        sock.send(buffer(results, results.size()));
     }
+    sock.close();
 }
 
 
@@ -29,11 +39,10 @@ fs::path getIndexPath() {
 
 
 int main(int, char**) {
-    boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::error);
+    boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::info);
 
     try{
         [[maybe_unused]] auto index_path = getIndexPath();
-        
         Index index = Index::load(index_path);
         auto index_ptr = &index;
 
@@ -41,12 +50,12 @@ int main(int, char**) {
 
         SocketListener listener {40000};
         listener.setConnectionHandler(
-            [index_ptr] (auto& sock) { handleClientQueries(index_ptr, sock); }
+            [index_ptr] (auto sock) { handleClientQueries(index_ptr, std::move(sock)); }
         );
         
-        // to stop listener from other thread, create command thread before start
 
         BOOST_LOG_TRIVIAL(info) << "started listening";
+        // thread is waiting for listener to stop
         listener.start();
 
     } catch (std::exception& err) {
