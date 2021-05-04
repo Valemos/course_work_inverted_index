@@ -19,9 +19,9 @@ namespace user_input {
 
 
 std::string user_input::promptOnce() noexcept {
-    std::string input_address;
-    std::cin >> input_address;
-    return input_address;
+    std::string input;
+    std::cin >> input;
+    return input;
 }
 
 

@@ -6,10 +6,12 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 
-#include <boost/asio/buffer.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/map.hpp>
+#include <boost/asio.hpp>
 
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/serialization/vector.hpp>
+
+#include "misc/socked_data_exchange.h"
 #include "index/Index.h"
 #include "index_server/SocketListener.h"
 
@@ -17,18 +19,29 @@ using boost::asio::buffer;
 
 
 void handleClientQueries(Index* index, tcp::socket sock) {
-    BOOST_LOG_TRIVIAL(info) << "accepted connection from " << sock.remote_endpoint().address().to_string();
+    BOOST_LOG_TRIVIAL(info) << "connected " << sock.remote_endpoint().address().to_string();
 
-    std::string query;
-    sock.receive(buffer(query));
+    while (true) {
+        try {
+            std::cout << "before" << std::endl;
+            
+            std::string query = socked_data_exchange::receiveString(sock);
+            
+            BOOST_LOG_TRIVIAL(debug) << "client query: \"" << query << '"';
 
-    BOOST_LOG_TRIVIAL(info) << "client query: \"" << query << '"';
+            // auto results = index->find(query);
+            std::vector<TermPosition> results {{0, 1}, {0, 2}, {1, 2}};
 
-    auto results = index->find(query);
-    auto results_paths = index->getFilePaths(results);
-    if (!results.empty()) {
-        sock.send(buffer(results, results.size()));
+            if (!results.empty()) {
+                socked_data_exchange::sendSerialized(results);
+            }
+
+        } catch (boost::system::system_error& err) {
+            BOOST_LOG_TRIVIAL(error) << err.what();
+            break;
+        }
     }
+
     sock.close();
 }
 
@@ -39,14 +52,14 @@ fs::path getIndexPath() {
 
 
 int main(int, char**) {
-    boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::info);
+    boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::debug);
 
     try{
         [[maybe_unused]] auto index_path = getIndexPath();
         Index index = Index::load(index_path);
         auto index_ptr = &index;
 
-        BOOST_LOG_TRIVIAL(info) << "index loaded from " << index_path;
+        BOOST_LOG_TRIVIAL(debug) << "index loaded from " << index_path;
 
         SocketListener listener {40000};
         listener.setConnectionHandler(
@@ -54,7 +67,6 @@ int main(int, char**) {
         );
         
 
-        BOOST_LOG_TRIVIAL(info) << "started listening";
         // thread is waiting for listener to stop
         listener.start();
 

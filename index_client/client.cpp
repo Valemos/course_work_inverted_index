@@ -4,13 +4,14 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/write.hpp>
+#include <boost/asio.hpp>
 
-#include <misc/user_input.h>
-#include <index/TermPosition.h>
+#include "misc/user_input.h"
+#include "misc/socked_data_exchange.h"
+#include "index/TermPosition.h"
+
+#include <thread>
+#include <chrono>
 
 using boost::asio::io_service;
 using boost::asio::ip::tcp;
@@ -22,14 +23,15 @@ void handleQueriesLoop(tcp::socket& remote) {
     boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::info);
 
     do {
-
         std::cout << "enter query: " << std::endl;
-        remote.send(buffer(user_input::promptOnce()));
+        // auto buf = user_input::promptOnce();
+        std::string buf{"abc\n"};
+        ;
         BOOST_LOG_TRIVIAL(info) << "query sent";
-
         // receive results
-        std::vector<TermPosition> results;
-        remote.receive(buffer(results));
+        std::vector<TermPosition> results(10);
+        socked_data_exchange::receiveSerialzed(remote, results);
+
         BOOST_LOG_TRIVIAL(info) << "received results";
 
         if (!results.empty()) {
@@ -42,8 +44,10 @@ void handleQueriesLoop(tcp::socket& remote) {
             std::cout << "query not found" << std::endl;
         }
 
-        std::cout << "continue search? ([y]/n): ";
-    } while (user_input::promptOnce() != "n");
+        // std::cout << "continue search? ([y]/n): ";
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+    } while (true);
+    // } while (user_input::promptOnce() != "n");
 }
 
 
