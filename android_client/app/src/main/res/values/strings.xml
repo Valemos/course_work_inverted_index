@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Socket Connection</string>
+    <string name="blow_up_mind">Blow up mind</string>
+    <string name="ip_address">Ip address</string>
+    <string name="localhost_address_string">127.0.0.1</string>
+    <string name="port">port</string>
+    <string name="sample_port">10000</string>
+    <string name="message">message</string>
+    <string name="query">query</string>
+    <string name="fixed_server_port">40000</string>
+    <string name="my_pc_ip">192.168.31.18</string>
+    <string name="server_response">server response</string>
+</resources>
