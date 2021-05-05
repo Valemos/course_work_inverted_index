@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <filesystem>
 
@@ -11,7 +10,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
 
-#include "misc/socked_data_exchange.h"
+#include "misc/socket_data_exchange.h"
 #include "index/Index.h"
 #include "index_server/SocketListener.h"
 
@@ -23,17 +22,16 @@ void handleClientQueries(Index* index, tcp::socket sock) {
 
     while (true) {
         try {
-            std::cout << "before" << std::endl;
+            BOOST_LOG_TRIVIAL(debug) << "before receive";
             
-            std::string query = socked_data_exchange::receiveString(sock);
+            std::string query = socket_data_exchange::receiveString(sock);
             
             BOOST_LOG_TRIVIAL(debug) << "client query: \"" << query << '"';
 
-            // auto results = index->find(query);
-            std::vector<TermPosition> results {{0, 1}, {0, 2}, {1, 2}};
-
+            auto results = index->find(query);
             if (!results.empty()) {
-                socked_data_exchange::sendSerialized(results);
+                socket_data_exchange::sendSerialized(sock, results);
+                BOOST_LOG_TRIVIAL(debug) << "results sent";
             }
 
         } catch (boost::system::system_error& err) {
