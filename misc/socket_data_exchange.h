@@ -4,11 +4,15 @@
 
 #include <string>
 
-#include <boost/asio.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/asio/streambuf.hpp>
+#include <boost/asio/read_until.hpp>
+#include <boost/asio/buffer.hpp>
+
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
-
 
 using boost::asio::ip::tcp;
 
@@ -35,6 +39,7 @@ void socket_data_exchange::sendString(tcp::socket& socket, const std::string& me
     boost::asio::write(socket, boost::asio::buffer(appended_message));
 }
 
+
 std::string socket_data_exchange::receiveString(tcp::socket& socket) 
 {
     boost::asio::streambuf buf;
@@ -43,17 +48,23 @@ std::string socket_data_exchange::receiveString(tcp::socket& socket)
     return result.substr(0, result.size() - 1);
 }
 
+
 template<typename Serializeable>
 void socket_data_exchange::sendSerialized(tcp::socket& socket, const Serializeable& data) 
 {
     boost::asio::streambuf buf;
     boost::archive::binary_oarchive archive(buf, boost_archive_flags);
     archive << data;
+
+    // send resulting size of serialized data
     auto size = buf.size();
     socket.send(boost::asio::buffer(&size, sizeof(size_t)));
+
+    // send data
     auto bytes_sent = socket.send(buf.data());
     buf.consume(bytes_sent);  // will not work without .consume
 }
+
 
 template<typename Serializeable>
 void socket_data_exchange::receiveSerialized(tcp::socket& socket, Serializeable& results) 

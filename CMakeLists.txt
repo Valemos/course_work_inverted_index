@@ -19,9 +19,9 @@ add_compile_definitions(_WIN32_WINNT=0x0601)
 add_library(index_lib index/Index.cpp)
 include_directories(${PROJECT_SOURCE_DIR})
 
-add_executable(client index_client/client.cpp)
+add_executable(client index_client/main.cpp index_client/IndexSearchClient.cpp)
 
-add_executable(server index_server/server.cpp index_server/SocketListener.cpp)
+add_executable(server index_server/main.cpp index_server/SocketListener.cpp index_server/IndexSearchServer.cpp)
 target_include_directories(server PRIVATE index_server)
 target_link_libraries(server index_lib)
 

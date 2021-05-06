@@ -105,7 +105,10 @@ Index Index::load(fs::path path)
         boost::archive::binary_iarchive archive {fin};
         Index index;
         archive >> index;
+        BOOST_LOG_TRIVIAL(debug) << "index loaded from " << path;
+
         return index;
+        
     } else {
         throw std::runtime_error("cannot read index from file " + path.string());
     }
