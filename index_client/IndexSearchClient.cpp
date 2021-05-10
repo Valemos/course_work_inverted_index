@@ -10,12 +10,12 @@ IndexSearchClient::IndexSearchClient() :
 {
 }
 
-std::vector<TermPosition> IndexSearchClient::searchIndex(std::string query) 
+std::vector<TokenPosition> IndexSearchClient::searchIndex(std::string query) 
 {
     socket_data_exchange::sendString(server_socket_, query);
     BOOST_LOG_TRIVIAL(debug) << "query sent";
     
-    std::vector<TermPosition> results;
+    std::vector<TokenPosition> results;
     socket_data_exchange::receiveSerialized(server_socket_, results);
     BOOST_LOG_TRIVIAL(debug) << "results received";
 

@@ -8,11 +8,11 @@
 #include "IndexSearchClient.h"
 
 
-void showResults(const std::vector<TermPosition>& results) {
+void showResults(const std::vector<TokenPosition>& results) {
     if (!results.empty()) {
         std::cout << "found positions:" << std::endl;
         for (auto& position : results) {
-            std::cout << "doc: " << position.document_index << " pos: " << position.term_start << std::endl;
+            std::cout << "doc: " << position.document_index << " pos: " << position.start << std::endl;
         }
     } else {
         std::cout << "query not found" << std::endl;

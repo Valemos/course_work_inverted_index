@@ -6,6 +6,7 @@
 #include <sstream>
 #include <utility>
 #include <fstream>
+#include <iterator>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -47,7 +48,7 @@ void Index::addFile(fs::path path)
             word_start = fin.tellg();
             fin >> word;
 
-            addTerm(normalizeToken(word), {document_id, word_start});
+            addToken(normalizeToken(word), {document_id, word_start});
         }
 
     } else {
@@ -55,20 +56,29 @@ void Index::addFile(fs::path path)
     }
 }
 
-std::vector<TermPosition> Index::find(const std::string& query) const
+std::list<TokenPosition> Index::find(const std::string& query) const
 {
-    std::vector<TermPosition> results;
+    auto tokens = tokenizeQuery(query);
+    if (tokens.empty()) return {};
 
-    auto map_position = term_positions_.find(normalizeToken(query));
-    if (map_position != term_positions_.end()) {
-        auto& terms_list = map_position->second;
-        results.insert(results.end(), terms_list.begin(), terms_list.end());
+    std::list<TokenPosition> search_results;
+
+    for (auto& token : tokens) {
+
+        auto optional_positions = getTokenPositions(token);
+        if (optional_positions.has_value()){
+            search_results = getListsIntersection(search_results, optional_positions.value());
+        }
+
+        if (search_results.empty()) {
+            return {};
+        } 
     }
-
-    return results;
+    
+    return search_results;
 }
 
-void Index::displayResults(const std::vector<TermPosition>& positions) const
+void Index::displayResults(const std::vector<TokenPosition>& positions) const
 {
     int result_index = 1;
     const std::string* prev_document_path {nullptr};
@@ -82,7 +92,7 @@ void Index::displayResults(const std::vector<TermPosition>& positions) const
 
         // word position and surroundings
         std::cout << result_index++ << "\t..." 
-                << readTermContext(*cur_document_path, position.term_start, 20) 
+                << readTermContext(*cur_document_path, position.start, 20) 
                 << "..." << std::endl;
     }
 }
@@ -114,16 +124,16 @@ Index Index::load(fs::path path)
     }
 }
 
-void Index::addTerm(const std::string& word, TermPosition position) 
+void Index::addToken(const std::string& word, TokenPosition position) 
 {
-    auto result = term_positions_.find(word);
-    if (result != term_positions_.end()){
+    auto result = token_positions_.find(word);
+    if (result != token_positions_.end()){
         result->second.emplace_back(position);
     } else {
-        std::list<TermPosition> positions_new;
+        std::list<TokenPosition> positions_new;
         positions_new.emplace_back(position);
 
-        term_positions_.emplace(word, std::move(positions_new));
+        token_positions_.emplace(word, std::move(positions_new));
     }
 }
 
@@ -179,11 +189,47 @@ std::string Index::readTermContext(const std::string& file_path, std::streamoff 
     return result_stream.str();
 }
 
-std::map<int, std::string> Index::getFilePaths(const std::vector<TermPosition>& positions) const
+std::map<int, std::string> Index::getFilePaths(const std::vector<TokenPosition>& positions) const
 {
     std::map<int, std::string> paths;
     for (auto& pos : positions) {
         paths.try_emplace(pos.document_index, fs::absolute(document_paths_[pos.document_index]).string());
     }
     return paths;
+}
+
+std::optional<std::reference_wrapper<const std::list<TokenPosition>>> Index::getTokenPositions(const std::string& token) const
+{
+    auto& map_pair = token_positions_.find(token);
+    if (map_pair != token_positions_.end()) {
+        return map_pair->second;
+    }
+    return {};
+}
+
+std::list<TokenPosition> Index::getListsIntersection(const std::list<TokenPosition>& first, const std::list<TokenPosition>& second) const
+{
+    // todo: check for correct order of TokenPosition objects
+    std::list<TokenPosition> result;
+    auto it1 = first.begin(), it2 = second.begin();
+    while (it1 != first.end() && it2 != second.end()) {
+        if (*it1 < *it2) {
+            std::next(it1);
+        } else if (*it2 < *it1) {
+            std::next(it2);
+        } else {
+            result.emplace_back(*it1);
+        }
+    }
+    return result;
+}
+
+std::vector<std::string> Index::tokenizeQuery(const std::string& query) const
+{
+    std::vector<std::string> results;
+    size_t last = 0, next = 0; 
+    while ((next = query.find(' ', last)) != std::string::npos) {
+        results.emplace_back(normalizeToken(query.substr(last, next-last)));
+    }
+    return results;
 }

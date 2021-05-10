@@ -7,7 +7,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/address.hpp>
 
-#include "index/TermPosition.h"
+#include "index/TokenPosition.h"
 
 
 
@@ -17,7 +17,7 @@ public:
     IndexSearchClient();
 
     void connect(boost::asio::ip::address address, unsigned short port);
-    std::vector<TermPosition> searchIndex(std::string query);
+    std::vector<TokenPosition> searchIndex(std::string query);
 
 private:
     boost::asio::io_service service_;

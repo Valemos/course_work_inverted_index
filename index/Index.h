@@ -7,9 +7,11 @@
 #include <vector>
 #include <fstream>
 #include <filesystem>
+#include <optional>
+
 
 #include <boost/serialization/access.hpp>
-#include "TermPosition.h"
+#include "TokenPosition.h"
 
 namespace fs = std::filesystem;
 
@@ -25,21 +27,26 @@ public:
     void addFile(fs::path path);
 
     // query must be a single word
-    std::vector<TermPosition> find(const std::string& query) const;
-    std::map<int, std::string> getFilePaths(const std::vector<TermPosition>& positions) const;
+    std::list<TokenPosition> find(const std::string& query) const;
+    std::map<int, std::string> getFilePaths(const std::vector<TokenPosition>& positions) const;
 
     // contextRaduis controls number of characters displayed around target term
-    void displayResults(const std::vector<TermPosition>& positions) const;
+    void displayResults(const std::vector<TokenPosition>& positions) const;
 
     void save(fs::path path) const;
     static Index load(fs::path path);
 
 private:
     std::vector<std::string> document_paths_;
-    std::map<std::string, std::list<TermPosition>> term_positions_;
+    std::map<std::string, std::list<TokenPosition>> token_positions_;
 
-    void addTerm(const std::string& word, TermPosition position);
+    std::vector<std::string> tokenizeQuery(const std::string& query) const;
     std::string normalizeToken(const std::string& word) const;
+
+    void addToken(const std::string& word, TokenPosition position);
+    std::optional<std::reference_wrapper<const std::list<TokenPosition>>> getTokenPositions(const std::string& token) const;
+    std::list<TokenPosition> getListsIntersection(const std::list<TokenPosition>& first, const std::list<TokenPosition>& second) const;
+
     std::string readTermContext(const std::string& file_path, std::streamoff first_letter, int context_radius) const;
 
     template<class Archive>
@@ -51,7 +58,7 @@ template<class Archive>
 void Index::serialize(Archive &ar, const unsigned int version) 
 {
     ar & document_paths_;
-    ar & term_positions_;
+    ar & token_positions_;
 }
 
 
