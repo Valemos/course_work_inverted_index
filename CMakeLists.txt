@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.9.0)
 project(inverted_index VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -8,7 +8,7 @@ include(CTest)
 enable_testing()
 
 
-find_package(Boost 1.73.0 REQUIRED COMPONENTS system thread)
+find_package(Boost REQUIRED COMPONENTS system thread)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     link_directories(${Boost_LIBRARY_DIRS})
@@ -27,6 +27,24 @@ target_link_libraries(server index_lib)
 
 add_executable(create_index index/create_index.cpp)
 target_link_libraries(create_index index_lib)
+
+
+# testing
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+)
+
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+include(GoogleTest)
+
+add_executable(tests index/test_index.cpp)
+target_link_libraries(tests gtest_main)
+# gtest_discover_tests(tests)
 
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

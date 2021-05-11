@@ -214,9 +214,9 @@ std::list<TokenPosition> Index::getListsIntersection(const std::list<TokenPositi
     auto it1 = first.begin(), it2 = second.begin();
     while (it1 != first.end() && it2 != second.end()) {
         if (*it1 < *it2) {
-            std::next(it1);
+            it1 = std::next(it1);
         } else if (*it2 < *it1) {
-            std::next(it2);
+            it2 = std::next(it2);
         } else {
             result.emplace_back(*it1);
         }
