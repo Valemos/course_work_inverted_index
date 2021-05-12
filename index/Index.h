@@ -31,7 +31,7 @@ public:
     std::map<int, std::string> getFilePaths(const std::vector<TokenPosition>& positions) const;
 
     // contextRaduis controls number of characters displayed around target term
-    void displayResults(const std::vector<TokenPosition>& positions) const;
+    void displayResults(const std::list<TokenPosition>& positions) const;
 
     void save(fs::path path) const;
     static Index load(fs::path path);

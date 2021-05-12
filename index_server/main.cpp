@@ -2,7 +2,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 
-#include "index_server/IndexSearchServer.h"
+#include "IndexSearchServer.h"
 
 
 fs::path getIndexPath() {

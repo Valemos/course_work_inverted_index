@@ -62,23 +62,29 @@ std::list<TokenPosition> Index::find(const std::string& query) const
     if (tokens.empty()) return {};
 
     std::list<TokenPosition> search_results;
+    bool is_first_token = true;
 
     for (auto& token : tokens) {
 
         auto optional_positions = getTokenPositions(token);
         if (optional_positions.has_value()){
-            search_results = getListsIntersection(search_results, optional_positions.value());
+            if (is_first_token) {
+                search_results = optional_positions.value();
+            } else {
+                search_results = getListsIntersection(search_results, optional_positions.value());
+            }
         }
 
         if (search_results.empty()) {
-            return {};
+            // stop further checks of tokens
+            break;
         } 
     }
     
     return search_results;
 }
 
-void Index::displayResults(const std::vector<TokenPosition>& positions) const
+void Index::displayResults(const std::list<TokenPosition>& positions) const
 {
     int result_index = 1;
     const std::string* prev_document_path {nullptr};
@@ -226,10 +232,15 @@ std::list<TokenPosition> Index::getListsIntersection(const std::list<TokenPositi
 
 std::vector<std::string> Index::tokenizeQuery(const std::string& query) const
 {
-    std::vector<std::string> results;
+    std::vector<std::string> tokens;
     size_t last = 0, next = 0; 
     while ((next = query.find(' ', last)) != std::string::npos) {
-        results.emplace_back(normalizeToken(query.substr(last, next-last)));
+        tokens.emplace_back(normalizeToken(query.substr(last, next-last)));
     }
-    return results;
+
+    if (tokens.empty()){
+        tokens = {normalizeToken(query)};
+    }
+
+    return tokens;
 }
