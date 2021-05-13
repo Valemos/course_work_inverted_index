@@ -25,12 +25,12 @@ public:
 
     void createFromDirectory(fs::path directory_path);
     void addFile(fs::path path);
+    const std::map<std::string, std::list<TokenPosition>>& getTokenPositions();
 
     // query must be a single word
     std::list<TokenPosition> find(const std::string& query) const;
-    std::map<int, std::string> getFilePaths(const std::vector<TokenPosition>& positions) const;
+    std::map<int, std::string> getFilePaths(const std::list<TokenPosition>& positions) const;
 
-    // contextRaduis controls number of characters displayed around target term
     void displayResults(const std::list<TokenPosition>& positions) const;
 
     void save(fs::path path) const;
@@ -40,13 +40,20 @@ private:
     std::vector<std::string> document_paths_;
     std::map<std::string, std::list<TokenPosition>> token_positions_;
 
-    std::vector<std::string> tokenizeQuery(const std::string& query) const;
-    std::string normalizeToken(const std::string& word) const;
+    // preprocess query
+    static std::vector<std::string> tokenizeQuery(const std::string& query);
+    static std::string normalizeToken(const std::string& word);
 
+    // add and get tokens with positions 
     void addToken(const std::string& word, TokenPosition position);
     std::optional<std::reference_wrapper<const std::list<TokenPosition>>> getTokenPositions(const std::string& token) const;
-    std::list<TokenPosition> getListsIntersection(const std::list<TokenPosition>& first, const std::list<TokenPosition>& second) const;
+    static std::list<TokenPosition> getListsIntersection(
+        const std::list<TokenPosition>& first,
+        const std::list<TokenPosition>& second
+    );
 
+    // read characters around position in indexed file 
+    // with context_radius characters before and after first_letter
     std::string readTermContext(const std::string& file_path, std::streamoff first_letter, int context_radius) const;
 
     template<class Archive>

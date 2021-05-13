@@ -143,7 +143,7 @@ void Index::addToken(const std::string& word, TokenPosition position)
     }
 }
 
-std::string Index::normalizeToken(const std::string& word) const
+std::string Index::normalizeToken(const std::string& word)
 {
     // preallocate memory for new token
     std::string token;
@@ -195,7 +195,7 @@ std::string Index::readTermContext(const std::string& file_path, std::streamoff 
     return result_stream.str();
 }
 
-std::map<int, std::string> Index::getFilePaths(const std::vector<TokenPosition>& positions) const
+std::map<int, std::string> Index::getFilePaths(const std::list<TokenPosition>& positions) const
 {
     std::map<int, std::string> paths;
     for (auto& pos : positions) {
@@ -213,7 +213,7 @@ std::optional<std::reference_wrapper<const std::list<TokenPosition>>> Index::get
     return {};
 }
 
-std::list<TokenPosition> Index::getListsIntersection(const std::list<TokenPosition>& first, const std::list<TokenPosition>& second) const
+std::list<TokenPosition> Index::getListsIntersection(const std::list<TokenPosition>& first, const std::list<TokenPosition>& second)
 {
     // todo: check for correct order of TokenPosition objects
     std::list<TokenPosition> result;
@@ -230,7 +230,7 @@ std::list<TokenPosition> Index::getListsIntersection(const std::list<TokenPositi
     return result;
 }
 
-std::vector<std::string> Index::tokenizeQuery(const std::string& query) const
+std::vector<std::string> Index::tokenizeQuery(const std::string& query)
 {
     std::vector<std::string> tokens;
     size_t last = 0, next = 0; 
@@ -243,4 +243,9 @@ std::vector<std::string> Index::tokenizeQuery(const std::string& query) const
     }
 
     return tokens;
+}
+
+const std::map<std::string, std::list<TokenPosition>>& Index::getTokenPositions() 
+{
+    return token_positions_;
 }

@@ -30,7 +30,11 @@ public:
         }
     }
 
+    bool operator==(const TokenPosition& other) const {
+        return document_index == other.document_index && start == other.start;
+    }
 
+private:
     // serialization logic
     friend class boost::serialization::access;
     template<class Archive>

@@ -2,7 +2,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include "Index.h"
 
 namespace fs = std::filesystem;
@@ -34,9 +33,15 @@ protected:
     }
 
     void TearDown() override {
-        fs::remove_all("./temp");
+        fs::remove_all(temp_dir_);
     }
 };
+
+
+TEST_F(IndexTest, FailToFindNonExistingWord) {
+    auto results = index_.find("nonexisting");
+    EXPECT_TRUE(results.empty());
+}
 
 TEST_F(IndexTest, FindSingleWord_FirstPosition){
     auto search_results = index_.find("test");
@@ -60,4 +65,22 @@ TEST_F(IndexTest, FindTwoWordsInDocument){
     EXPECT_EQ(search_results.size(), 2);
 };
 
+TEST_F(IndexTest, GetFilePaths) {
+    auto results = index_.find("test");
+    
+    std::map<int, std::string> expected {
+        {0, temp_1_.string()}, 
+        {1, temp_2_.string()}
+    };
 
+    EXPECT_EQ(index_.getFilePaths(results), expected);
+}
+
+TEST_F(IndexTest, TestIndexSerialization) {
+    index_.save(temp_dir_ / "index");
+
+    auto other_index = Index::load(temp_dir_ / "index");
+
+    ASSERT_TRUE(fs::exists(temp_dir_ / "index"));
+    EXPECT_EQ(index_.getTokenPositions(), other_index.getTokenPositions());
+}
