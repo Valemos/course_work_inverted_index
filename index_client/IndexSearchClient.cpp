@@ -1,7 +1,7 @@
 #include "IndexSearchClient.h"
 
+#include <iostream>
 #include <boost/log/trivial.hpp>
-
 #include "misc/socket_data_exchange.h"
 
 
@@ -10,16 +10,30 @@ IndexSearchClient::IndexSearchClient() :
 {
 }
 
-std::vector<TokenPosition> IndexSearchClient::searchIndex(std::string query) 
+std::vector<SearchResult> IndexSearchClient::searchIndex(std::string query) 
 {
     socket_data_exchange::sendString(server_socket_, query);
     BOOST_LOG_TRIVIAL(debug) << "query sent";
     
-    std::vector<TokenPosition> results;
+    std::vector<SearchResult> results;
     socket_data_exchange::receiveSerialized(server_socket_, results);
     BOOST_LOG_TRIVIAL(debug) << "results received";
 
     return results;
+}
+
+void IndexSearchClient::printResults(const std::vector<SearchResult>& results) const
+{
+    if (!results.empty()) {
+        std::cout << "found positions:" << std::endl;
+        for (auto& result : results) {
+            std::cout << "doc: " << result.position.document_index 
+                    << " pos: " << result.position.start
+                    << " context: " << result.context << std::endl;
+        }
+    } else {
+        std::cout << "query not found" << std::endl;
+    }
 }
 
 void IndexSearchClient::connect(boost::asio::ip::address address, unsigned short port)

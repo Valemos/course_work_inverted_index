@@ -9,9 +9,9 @@
 #include <filesystem>
 #include <optional>
 
-
 #include <boost/serialization/access.hpp>
 #include "TokenPosition.h"
+#include "SearchResult.h"
 
 namespace fs = std::filesystem;
 
@@ -27,9 +27,8 @@ public:
     void addFile(fs::path path);
     const std::map<std::string, std::list<TokenPosition>>& getTokenPositions();
 
-    // query must be a single word
-    std::list<TokenPosition> find(const std::string& query) const;
-    std::map<int, std::string> getFilePaths(const std::list<TokenPosition>& positions) const;
+    // query must be a single word or set of words separated with spaces
+    std::vector<SearchResult> find(const std::string& query) const;
 
     void displayResults(const std::list<TokenPosition>& positions) const;
 
@@ -47,6 +46,8 @@ private:
     // add and get tokens with positions 
     void addToken(const std::string& word, TokenPosition position);
     std::optional<std::reference_wrapper<const std::list<TokenPosition>>> getTokenPositions(const std::string& token) const;
+    
+    // get common values for two lists
     static std::list<TokenPosition> getListsIntersection(
         const std::list<TokenPosition>& first,
         const std::list<TokenPosition>& second
@@ -54,7 +55,9 @@ private:
 
     // read characters around position in indexed file 
     // with context_radius characters before and after first_letter
-    std::string readTermContext(const std::string& file_path, std::streamoff first_letter, int context_radius) const;
+    std::string readTermContext(const TokenPosition& position, int context_radius) const;
+    std::string readTermContext(const fs::path& file_path, std::streamoff first_letter, int context_radius) const;
+    std::vector<SearchResult> readPositionsContext(const std::list<TokenPosition>& positions) const;
 
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version);

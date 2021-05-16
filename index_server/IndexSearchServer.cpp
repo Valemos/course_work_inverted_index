@@ -40,10 +40,8 @@ void IndexSearchServer::handleClientQueries(tcp::socket sock) {
 
             BOOST_LOG_TRIVIAL(debug) << "results size: " << results.size();
 
-            if (!results.empty()) {
-                socket_data_exchange::sendSerialized(sock, results);
-                BOOST_LOG_TRIVIAL(debug) << "results sent";
-            }
+            socket_data_exchange::sendSerialized(sock, results);
+            BOOST_LOG_TRIVIAL(debug) << "results sent";
 
         } catch (boost::system::system_error& err) {
             BOOST_LOG_TRIVIAL(error) << err.what();

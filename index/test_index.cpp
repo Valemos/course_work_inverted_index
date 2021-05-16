@@ -47,7 +47,7 @@ TEST_F(IndexTest, FindSingleWord_FirstPosition){
     auto search_results = index_.find("test");
     
     ASSERT_FALSE(search_results.empty());
-    EXPECT_EQ(search_results.begin()->start, (std::streamoff)5);
+    EXPECT_EQ(search_results.begin()->position.start, (std::streamoff)5);
 };
 
 TEST_F(IndexTest, FindAllWords){
@@ -61,20 +61,9 @@ TEST_F(IndexTest, FindTwoWordsInDocument){
     auto search_results = index_.find("test other");
     
     ASSERT_FALSE(search_results.empty());
-    EXPECT_EQ(search_results.begin()->document_index, 1);
+    EXPECT_EQ(search_results.begin()->position.document_index, 1);
     EXPECT_EQ(search_results.size(), 2);
 };
-
-TEST_F(IndexTest, GetFilePaths) {
-    auto results = index_.find("test");
-    
-    std::map<int, std::string> expected {
-        {0, temp_1_.string()}, 
-        {1, temp_2_.string()}
-    };
-
-    EXPECT_EQ(index_.getFilePaths(results), expected);
-}
 
 TEST_F(IndexTest, TestIndexSerialization) {
     index_.save(temp_dir_ / "index");
@@ -83,4 +72,4 @@ TEST_F(IndexTest, TestIndexSerialization) {
 
     ASSERT_TRUE(fs::exists(temp_dir_ / "index"));
     EXPECT_EQ(index_.getTokenPositions(), other_index.getTokenPositions());
-}
+};

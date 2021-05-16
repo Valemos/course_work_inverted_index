@@ -1,7 +1,6 @@
 #ifndef __TERMPOSITION_H__
 #define __TERMPOSITION_H__
 
-
 #include <fstream>
 #include <boost/serialization/access.hpp>
 
@@ -10,10 +9,8 @@ class TokenPosition {
 public:
 
     TokenPosition() : document_index(0), start(0) {};
-    TokenPosition(int document_index, std::streamoff start) :
-        document_index(document_index), start(start)
-    {
-    }
+    TokenPosition(int document_index, std::streamoff start) : 
+        document_index(document_index), start(start) {}
 
     int document_index;
     std::streamoff start;

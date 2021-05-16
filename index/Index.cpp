@@ -16,6 +16,7 @@
 #include <boost/serialization/string.hpp>
 
 
+
 Index::Index(size_t total_files) 
 {
     document_paths_.reserve(total_files);
@@ -36,7 +37,7 @@ void Index::addFile(fs::path path)
 
     // path_id is index of document_paths_ vector
     int document_id = (int) document_paths_.size();
-    document_paths_.push_back(path.string());
+    document_paths_.emplace_back(path.string());
 
     std::ifstream fin(path);
     if (!fin.bad()) {
@@ -56,32 +57,32 @@ void Index::addFile(fs::path path)
     }
 }
 
-std::list<TokenPosition> Index::find(const std::string& query) const
+std::vector<SearchResult> Index::find(const std::string& query) const
 {
     auto tokens = tokenizeQuery(query);
     if (tokens.empty()) return {};
 
-    std::list<TokenPosition> search_results;
+    std::list<TokenPosition> positions_found;
     bool is_first_token = true;
 
     for (auto& token : tokens) {
 
-        auto optional_positions = getTokenPositions(token);
-        if (optional_positions.has_value()){
+        auto token_positions = getTokenPositions(token);
+        if (token_positions.has_value()){
             if (is_first_token) {
-                search_results = optional_positions.value();
+                positions_found = token_positions.value();
             } else {
-                search_results = getListsIntersection(search_results, optional_positions.value());
+                positions_found = getListsIntersection(positions_found, token_positions.value());
             }
         }
 
-        if (search_results.empty()) {
+        if (positions_found.empty()) {
             // stop further checks of tokens
             break;
         } 
     }
     
-    return search_results;
+    return readPositionsContext(positions_found);
 }
 
 void Index::displayResults(const std::list<TokenPosition>& positions) const
@@ -97,7 +98,7 @@ void Index::displayResults(const std::list<TokenPosition>& positions) const
         }
 
         // word position and surroundings
-        std::cout << result_index++ << "\t..." 
+        std::cout << result_index++ << "\t..."
                 << readTermContext(*cur_document_path, position.start, 20) 
                 << "..." << std::endl;
     }
@@ -132,6 +133,8 @@ Index Index::load(fs::path path)
 
 void Index::addToken(const std::string& word, TokenPosition position) 
 {
+    if (word.empty()) return;
+
     auto result = token_positions_.find(word);
     if (result != token_positions_.end()){
         result->second.emplace_back(position);
@@ -165,7 +168,12 @@ std::string Index::normalizeToken(const std::string& word)
     return ss.str();
 }
 
-std::string Index::readTermContext(const std::string& file_path, std::streamoff word_start, int context_radius) const
+std::string Index::readTermContext(const TokenPosition& position, int context_radius) const
+{
+    return readTermContext(document_paths_[position.document_index], position.start, context_radius);
+}
+
+std::string Index::readTermContext(const fs::path& file_path, std::streamoff word_start, int context_radius) const
 {
     auto read_start = std::max(word_start - context_radius, (std::streamoff) 0);
     auto read_start_size = std::min(word_start, (std::streamoff) context_radius);
@@ -193,15 +201,6 @@ std::string Index::readTermContext(const std::string& file_path, std::streamoff 
     }
 
     return result_stream.str();
-}
-
-std::map<int, std::string> Index::getFilePaths(const std::list<TokenPosition>& positions) const
-{
-    std::map<int, std::string> paths;
-    for (auto& pos : positions) {
-        paths.try_emplace(pos.document_index, fs::absolute(document_paths_[pos.document_index]).string());
-    }
-    return paths;
 }
 
 std::optional<std::reference_wrapper<const std::list<TokenPosition>>> Index::getTokenPositions(const std::string& token) const
@@ -248,4 +247,16 @@ std::vector<std::string> Index::tokenizeQuery(const std::string& query)
 const std::map<std::string, std::list<TokenPosition>>& Index::getTokenPositions() 
 {
     return token_positions_;
+}
+
+std::vector<SearchResult> Index::readPositionsContext(const std::list<TokenPosition>& positions) const
+{
+    std::vector<SearchResult> results;
+    results.reserve(positions.size());
+
+    for (auto& position : positions) {
+        results.emplace_back(SearchResult {position, readTermContext(position, 10)});
+    }
+
+    return results;
 }

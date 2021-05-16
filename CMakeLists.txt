@@ -40,6 +40,10 @@ target_link_libraries(server index_lib)
 add_executable(create_index index/create_index.cpp)
 target_link_libraries(create_index index_lib)
 
+add_custom_target(client_server)
+add_dependencies(client_server client server)
+
+
 # testing
 include(GoogleTest)
 add_executable(tests index/test_index.cpp)
