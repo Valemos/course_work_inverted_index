@@ -16,6 +16,7 @@ public:
     IndexSearchClient();
 
     void connect(boost::asio::ip::address address, unsigned short port);
+    void disconnect();
     std::vector<SearchResult> searchIndex(std::string query);
     void printResults(const std::vector<SearchResult>& results) const;
 

@@ -15,6 +15,7 @@ namespace user_input {
     std::string promptOnce() noexcept;
     ip::address promptIpAddress() noexcept;
     fs::path promptExistingDirectory() noexcept;
+    char promptKeyboardButton() noexcept;
 }
 
 
@@ -46,6 +47,15 @@ fs::path user_input::promptExistingDirectory() noexcept {
         }
         std::cout << "path does not exist!" << std::endl;
     }
+}
+
+char user_input::promptKeyboardButton() noexcept
+{
+    char result;
+    std::cin.clear();
+    std::cin.ignore(10000, '\n');
+    std::cin.get(result);
+    return result;
 }
 
 #endif // __USER_INPUT_H__

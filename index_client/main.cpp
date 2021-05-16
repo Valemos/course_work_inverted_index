@@ -26,12 +26,13 @@ int main(int, char**) {
                 client.printResults(results);
 
                 std::cout << "continue search? ([y]/n): ";
-            } while (user_input::promptOnce() != "n");    
+            } while (user_input::promptKeyboardButton() != 'n');   
 
         } catch (boost::system::system_error& err) {
             BOOST_LOG_TRIVIAL(info) << err.what() << std::endl;
         }
 
+        client.disconnect();
         std::cout << "reconnect to server? ([y]/n):";
     } while (user_input::promptOnce() != "n");
 

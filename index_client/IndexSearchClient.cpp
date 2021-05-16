@@ -43,3 +43,9 @@ void IndexSearchClient::connect(boost::asio::ip::address address, unsigned short
     server_socket_.connect(server_ep);
     BOOST_LOG_TRIVIAL(debug) << "client connected" << std::endl;
 }
+
+void IndexSearchClient::disconnect() 
+{
+    server_socket_.close();
+    BOOST_LOG_TRIVIAL(debug) << "client disconnected" << std::endl;
+}
