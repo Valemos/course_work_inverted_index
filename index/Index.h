@@ -3,7 +3,7 @@
 
 #include <string>
 #include <list>
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <fstream>
 #include <filesystem>
@@ -23,32 +23,37 @@ public:
     Index() = default;
     Index(size_t total_files);
 
-    void createFromDirectory(fs::path directory_path);
-    void addFile(fs::path path);
-    const std::map<std::string, std::list<TokenPosition>>& getTokenPositions();
+    size_t getTotalFiles() const noexcept;
+    
+    // to avoid document_id collisions, must use only one type of addFile function 
+    void addFile(const fs::path& path, int document_id);
+    void addFile(const fs::path& path);
+    
+    void mergeIndex(const Index& other);
 
-    // query must be a single word or set of words separated with spaces
+    // query must be a set of words separated with spaces or a single word
     std::vector<SearchResult> find(const std::string& query) const;
 
-    void displayResults(const std::list<TokenPosition>& positions) const;
-
+    void reserve(size_t file_count);
     void save(fs::path path) const;
     static Index load(fs::path path);
 
+    bool operator==(const Index& other) const noexcept;
+
 private:
-    std::vector<std::string> document_paths_;
-    std::map<std::string, std::list<TokenPosition>> token_positions_;
+    std::unordered_map<int, std::string> document_paths_;
+    std::unordered_map<std::string, std::list<TokenPosition>> token_positions_;
 
     // preprocess query
     static std::vector<std::string> tokenizeQuery(const std::string& query);
     static std::string normalizeToken(const std::string& word);
 
-    // add and get tokens with positions 
-    void addToken(const std::string& word, TokenPosition position);
-    std::optional<std::reference_wrapper<const std::list<TokenPosition>>> getTokenPositions(const std::string& token) const;
+    // add and get tokens with positions
+    void addToken(std::string word, TokenPosition position);
+    std::optional<std::reference_wrapper<const std::list<TokenPosition>>> getPositionsForToken(const std::string& token) const;
     
     // get common values for two lists
-    static std::list<TokenPosition> getListsIntersection(
+    static std::list<TokenPosition> getIntersectionByDocument(
         const std::list<TokenPosition>& first,
         const std::list<TokenPosition>& second
     );

@@ -61,8 +61,8 @@ TEST_F(IndexTest, FindTwoWordsInDocument){
     auto search_results = index_.find("test other");
     
     ASSERT_FALSE(search_results.empty());
-    EXPECT_EQ(search_results.begin()->position.document_index, 1);
-    EXPECT_EQ(search_results.size(), 2);
+    EXPECT_EQ(search_results[0].position, TokenPosition(1, 0));
+    EXPECT_EQ(search_results[1].position, TokenPosition(1, 4));
 };
 
 TEST_F(IndexTest, TestIndexSerialization) {
@@ -71,5 +71,5 @@ TEST_F(IndexTest, TestIndexSerialization) {
     auto other_index = Index::load(temp_dir_ / "index");
 
     ASSERT_TRUE(fs::exists(temp_dir_ / "index"));
-    EXPECT_EQ(index_.getTokenPositions(), other_index.getTokenPositions());
+    EXPECT_EQ(index_, other_index);
 };

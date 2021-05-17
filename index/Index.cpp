@@ -10,34 +10,31 @@
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
+#include <boost/serialization/unordered_map.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/string.hpp>
 
 
-
 Index::Index(size_t total_files) 
 {
-    document_paths_.reserve(total_files);
+    reserve(total_files);
 }
 
-void Index::createFromDirectory(fs::path directory_path) 
+size_t Index::getTotalFiles() const noexcept
 {
-    for (auto& entry : fs::recursive_directory_iterator(fs::absolute(directory_path))) {
-        if (entry.is_regular_file()) {
-            addFile(entry.path().string());
-        }
-    }
+    return document_paths_.size();
 }
 
-void Index::addFile(fs::path path) 
+void Index::addFile(const fs::path& path) 
+{
+    addFile(path, (int) document_paths_.size());
+}
+
+void Index::addFile(const fs::path& path, int document_id)
 {
     BOOST_LOG_TRIVIAL(info) << path;
 
-    // path_id is index of document_paths_ vector
-    int document_id = (int) document_paths_.size();
-    document_paths_.emplace_back(path.string());
+    document_paths_.emplace(document_id, path.string());
 
     std::ifstream fin(path);
     if (!fin.bad()) {
@@ -57,6 +54,24 @@ void Index::addFile(fs::path path)
     }
 }
 
+void Index::mergeIndex(const Index& other) 
+{
+    for (auto& id_path : other.document_paths_) {
+        document_paths_.emplace(id_path.first, id_path.second);
+    }
+
+    for (auto& [other_token, other_positions] : other.token_positions_) {
+        auto token_search = token_positions_.find(other_token);
+        if (token_search == token_positions_.end()) {
+            // create new token
+            token_positions_.emplace(other_token, other_positions);
+        } else {
+            // insert existing
+            token_search->second.insert(token_search->second.end(), other_positions.begin(), other_positions.end());
+        }
+    }
+}
+
 std::vector<SearchResult> Index::find(const std::string& query) const
 {
     auto tokens = tokenizeQuery(query);
@@ -67,12 +82,13 @@ std::vector<SearchResult> Index::find(const std::string& query) const
 
     for (auto& token : tokens) {
 
-        auto token_positions = getTokenPositions(token);
+        auto token_positions = getPositionsForToken(token);
         if (token_positions.has_value()){
             if (is_first_token) {
                 positions_found = token_positions.value();
+                is_first_token = false;
             } else {
-                positions_found = getListsIntersection(positions_found, token_positions.value());
+                positions_found = getIntersectionByDocument(positions_found, token_positions.value());
             }
         }
 
@@ -85,23 +101,9 @@ std::vector<SearchResult> Index::find(const std::string& query) const
     return readPositionsContext(positions_found);
 }
 
-void Index::displayResults(const std::list<TokenPosition>& positions) const
+void Index::reserve(size_t file_count) 
 {
-    int result_index = 1;
-    const std::string* prev_document_path {nullptr};
-    for (auto& position : positions) {
-        // document path
-        auto* cur_document_path = &document_paths_[position.document_index];
-        if (cur_document_path != prev_document_path) {
-            std::cout << "for path " << *cur_document_path << std::endl;
-            prev_document_path = cur_document_path;
-        }
-
-        // word position and surroundings
-        std::cout << result_index++ << "\t..."
-                << readTermContext(*cur_document_path, position.start, 20) 
-                << "..." << std::endl;
-    }
+    document_paths_.reserve(file_count);
 }
 
 void Index::save(fs::path path) const
@@ -131,7 +133,7 @@ Index Index::load(fs::path path)
     }
 }
 
-void Index::addToken(const std::string& word, TokenPosition position) 
+void Index::addToken(std::string word, TokenPosition position) 
 {
     if (word.empty()) return;
 
@@ -139,19 +141,13 @@ void Index::addToken(const std::string& word, TokenPosition position)
     if (result != token_positions_.end()){
         result->second.emplace_back(position);
     } else {
-        std::list<TokenPosition> positions_new;
-        positions_new.emplace_back(position);
-
-        token_positions_.emplace(word, std::move(positions_new));
+        token_positions_.emplace(word, std::list<TokenPosition> {position});
     }
 }
 
 std::string Index::normalizeToken(const std::string& word)
 {
-    // preallocate memory for new token
-    std::string token;
-    token.reserve(word.size());
-    std::stringstream ss(std::move(token));
+    std::stringstream ss;
 
     for (auto& letter : word) {
         if (letter != '.' && 
@@ -170,7 +166,12 @@ std::string Index::normalizeToken(const std::string& word)
 
 std::string Index::readTermContext(const TokenPosition& position, int context_radius) const
 {
-    return readTermContext(document_paths_[position.document_index], position.start, context_radius);
+    auto id_path = document_paths_.find(position.document_index);
+    if (id_path == document_paths_.end()) {
+        throw std::runtime_error("Programmer error! cannot find file path with id provided.");
+    }
+
+    return readTermContext(id_path->second, position.start, context_radius);
 }
 
 std::string Index::readTermContext(const fs::path& file_path, std::streamoff word_start, int context_radius) const
@@ -203,27 +204,30 @@ std::string Index::readTermContext(const fs::path& file_path, std::streamoff wor
     return result_stream.str();
 }
 
-std::optional<std::reference_wrapper<const std::list<TokenPosition>>> Index::getTokenPositions(const std::string& token) const
+std::optional<std::reference_wrapper<const std::list<TokenPosition>>> Index::getPositionsForToken(const std::string& token) const
 {
-    auto& map_pair = token_positions_.find(token);
+    auto map_pair = token_positions_.find(token);
     if (map_pair != token_positions_.end()) {
         return map_pair->second;
     }
     return {};
 }
 
-std::list<TokenPosition> Index::getListsIntersection(const std::list<TokenPosition>& first, const std::list<TokenPosition>& second)
+std::list<TokenPosition> Index::getIntersectionByDocument(const std::list<TokenPosition>& first, const std::list<TokenPosition>& second)
 {
     // todo: check for correct order of TokenPosition objects
     std::list<TokenPosition> result;
     auto it1 = first.begin(), it2 = second.begin();
     while (it1 != first.end() && it2 != second.end()) {
-        if (*it1 < *it2) {
-            it1 = std::next(it1);
-        } else if (*it2 < *it1) {
-            it2 = std::next(it2);
+        if (it1->document_index < it2->document_index) {
+            it1++;
+        } else if (it2->document_index < it1->document_index) {
+            it2++;
         } else {
             result.emplace_back(*it1);
+            if (*it2 != *it1) { result.emplace_back(*it2); }
+            it1++;
+            it2++;
         }
     }
     return result;
@@ -232,21 +236,21 @@ std::list<TokenPosition> Index::getListsIntersection(const std::list<TokenPositi
 std::vector<std::string> Index::tokenizeQuery(const std::string& query)
 {
     std::vector<std::string> tokens;
-    size_t last = 0, next = 0; 
-    while ((next = query.find(' ', last)) != std::string::npos) {
-        tokens.emplace_back(normalizeToken(query.substr(last, next-last)));
+    size_t start = 0, end = 0; 
+    while ((end = query.find(' ', start)) != std::string::npos) {
+        tokens.emplace_back(normalizeToken(query.substr(start, end - start)));
+        start = end + 1;
     }
 
-    if (tokens.empty()){
-        tokens = {normalizeToken(query)};
-    }
+    // the last token will not end with space
+    tokens.emplace_back(normalizeToken(query.substr(start, end)));
 
     return tokens;
 }
 
-const std::map<std::string, std::list<TokenPosition>>& Index::getTokenPositions() 
+bool Index::operator==(const Index& other) const noexcept
 {
-    return token_positions_;
+    return token_positions_ == other.token_positions_;
 }
 
 std::vector<SearchResult> Index::readPositionsContext(const std::list<TokenPosition>& positions) const

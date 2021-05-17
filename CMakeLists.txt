@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9.0)
 project(inverted_index VERSION 0.1.0)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(CTest)
@@ -28,7 +28,7 @@ endif()
 
 add_compile_definitions(_WIN32_WINNT=0x0601)
 
-add_library(index_lib index/Index.cpp)
+add_library(index_lib index/Index.cpp index/IndexBuilder.cpp)
 include_directories(${PROJECT_SOURCE_DIR})
 
 add_executable(client index_client/main.cpp index_client/IndexSearchClient.cpp)

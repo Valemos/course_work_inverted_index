@@ -21,7 +21,7 @@ namespace user_input {
 
 std::string user_input::promptOnce() noexcept {
     std::string input;
-    std::cin >> input;
+    std::getline(std::cin, input);
     return input;
 }
 

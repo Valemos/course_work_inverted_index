@@ -1,15 +1,23 @@
 
 #include <iostream>
-#include <filesystem>
+
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
 
 #include "misc/user_input.h"
-#include "index/Index.h"
+#include "IndexBuilder.h"
 
 
 int main(int, char**) {
-    Index index;
-    index.createFromDirectory(user_input::promptExistingDirectory());
+    boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::debug);
+    
+    IndexBuilder builder(4);
+    builder.createFromDirectory("datasets/data/aclImdb/test/neg");
+    // builder.createFromDirectory(user_input::promptExistingDirectory());
+    
     std::cout << "enter save path: " << std::endl;
-    index.save(user_input::promptOnce());
+    builder.getIndex().save(user_input::promptOnce());
+
     return 0;
 }
