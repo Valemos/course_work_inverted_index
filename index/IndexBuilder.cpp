@@ -18,24 +18,25 @@ IndexBuilder::IndexBuilder(int threads_number) :
 {
 }
 
-void IndexBuilder::createFromDirectory(std::filesystem::path directory) 
+void IndexBuilder::indexDirectory(fs::path directory) 
 {
     // create index objects from different files and merge them into one
     std::vector<Index> partial_indices((size_t) threads_number_);
 
-    int file_id = 1;
+    int file_id = 0;
     int current_index = 0;
     for (auto& entry : fs::recursive_directory_iterator(fs::absolute(directory))) {
         if (entry.is_regular_file()) {
             auto* index_ptr = &partial_indices[current_index];
-            auto path = std::filesystem::path(entry.path());
-            // index_ptr->addFile(path, file_id);
+
+            // index will be located in the same path as target directory
+            auto path = directory / fs::relative(entry.path(), directory);
 
             auto task = [index_ptr, path, file_id]() { index_ptr->addFile(path, file_id); };
             boost::asio::post(builder_pool_, task);
 
             file_id++;
-            current_index = (current_index + 1) % partial_indices.size(); // go to next partial indices in loop
+            current_index = (current_index + 1) % partial_indices.size();
         }
     }
 

@@ -32,7 +32,9 @@ void Index::addFile(const fs::path& path)
 
 void Index::addFile(const fs::path& path, int document_id)
 {
-    BOOST_LOG_TRIVIAL(info) << path;
+    if (!fs::exists(path)) {
+        throw std::runtime_error("path does not exist " + path.string());
+    }
 
     document_paths_.emplace(document_id, path.string());
 
@@ -51,6 +53,7 @@ void Index::addFile(const fs::path& path, int document_id)
 
     } else {
         BOOST_LOG_TRIVIAL(error) << "cannot read file " << path;
+        throw std::runtime_error("cannot read file " + path.string());
     }
 }
 
@@ -250,6 +253,17 @@ std::vector<std::string> Index::tokenizeQuery(const std::string& query)
 
 bool Index::operator==(const Index& other) const noexcept
 {
+    for (auto& [id, path_str] : document_paths_) {
+        auto search_path = other.document_paths_.find(id);
+        if (search_path == other.document_paths_.end()) {
+            // id not found
+            return false;
+        } else if (fs::absolute(path_str) != fs::absolute(search_path->second)) {
+            // paths does not match
+            return false;
+        }
+    }
+
     return token_positions_ == other.token_positions_;
 }
 

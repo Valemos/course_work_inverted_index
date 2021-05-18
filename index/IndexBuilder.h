@@ -6,6 +6,8 @@
 
 #include "Index.h"
 
+namespace fs = std::filesystem;
+
 
 class IndexBuilder {
 
@@ -14,7 +16,7 @@ public:
     IndexBuilder(int threads_count);
 
 
-    void createFromDirectory(std::filesystem::path directory);
+    void indexDirectory(fs::path directory);
     const Index& getIndex();
 
 private:
