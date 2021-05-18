@@ -29,7 +29,8 @@ public:
     void addFile(const fs::path& path, int document_id);
     void addFile(const fs::path& path);
     
-    void mergeIndex(const Index& other);
+    // invalidates other index in process
+    void mergeIndex(Index& other);
 
     // query must be a set of words separated with spaces or a single word
     std::vector<SearchResult> find(const std::string& query) const;

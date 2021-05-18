@@ -57,7 +57,7 @@ void Index::addFile(const fs::path& path, int document_id)
     }
 }
 
-void Index::mergeIndex(const Index& other) 
+void Index::mergeIndex(Index& other) 
 {
     for (auto& id_path : other.document_paths_) {
         document_paths_.emplace(id_path.first, id_path.second);
@@ -70,7 +70,8 @@ void Index::mergeIndex(const Index& other)
             token_positions_.emplace(other_token, other_positions);
         } else {
             // insert existing
-            token_search->second.insert(token_search->second.end(), other_positions.begin(), other_positions.end());
+            auto& token_list = token_search->second;
+            token_list.splice(token_list.end(), other_positions);
         }
     }
 }

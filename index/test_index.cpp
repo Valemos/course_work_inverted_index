@@ -104,17 +104,17 @@ TEST(IndexBuildTest, FailToCreateFromNonExistingDirectory) {
         builder.indexDirectory("./nonexisting");
         FAIL() << "not failed on not existing directory";
     } catch (std::exception& err) {
-        EXPECT_TRUE(builder.getIndex() == Index());
+        EXPECT_TRUE(builder.getIndex() == Index()) << err.what();
     }
 }
 
-TEST_F(IndexTempFilesTest, AddNotExistingFile) {
-    auto index_copy = Index(index_);
+TEST(IndexBuildTest, FailToAddNotExistingFile) {
+    auto index = Index();
     try {
-        index_.addFile(temp_dir_ / "nonexisting.txt");
+        index.addFile("nonexisting.txt");
         FAIL() << "not failed on not existing file";
     } catch (std::exception& err) {
-        EXPECT_TRUE(index_ == index_copy);
+        EXPECT_TRUE(index == Index()) << err.what();
     }
 };
 
