@@ -2,8 +2,8 @@
 
 #include <filesystem>
 #include <fstream>
-#include "Index.h"
-#include "IndexBuilder.h"
+#include "index/Index.h"
+#include "index/IndexBuilder.h"
 
 namespace fs = std::filesystem;
 

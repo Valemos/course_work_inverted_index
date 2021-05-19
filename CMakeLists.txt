@@ -46,9 +46,13 @@ add_dependencies(client_server client server)
 
 # testing
 include(GoogleTest)
-add_executable(tests index/test_index.cpp)
+add_executable(tests test/test_index.cpp)
 target_link_libraries(tests gtest_main index_lib)
 gtest_discover_tests(tests)
+
+
+add_executable(performance test/performance.cpp)
+target_link_libraries(performance index_lib)
 
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

@@ -22,6 +22,7 @@ public:
 private:
     int threads_number_;
     boost::asio::thread_pool builder_pool_;
+    std::vector<Index> partial_indices_;
 
     Index result_;
 };

@@ -6,6 +6,7 @@
 #include <boost/system/system_error.hpp>
 #include <filesystem>
 #include <string>
+#include <sstream>
 
 namespace fs = std::filesystem;
 namespace ip = boost::asio::ip;
@@ -13,6 +14,7 @@ namespace ip = boost::asio::ip;
 
 namespace user_input {
     std::string promptOnce() noexcept;
+    size_t promptSize(std::string value_name) noexcept;
     ip::address promptIpAddress() noexcept;
     fs::path promptExistingDirectory() noexcept;
     char promptKeyboardButton() noexcept;
@@ -25,6 +27,22 @@ std::string user_input::promptOnce() noexcept {
     return input;
 }
 
+size_t promptSize(std::string value_name) noexcept
+{
+    while (true) {
+        std::cout << "enter " << value_name << ": ";
+
+        try {
+            size_t result = std::stoll(user_input::promptOnce());
+            return result;
+
+        } catch (std::invalid_argument& err) {
+            std::cout << err.what();
+        } catch (std::out_of_range& err) {
+            std::cout << err.what();
+        }
+    }
+}
 
 ip::address user_input::promptIpAddress() noexcept {
     while (true) {

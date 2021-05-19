@@ -25,7 +25,7 @@ size_t Index::getTotalFiles() const noexcept
     return document_paths_.size();
 }
 
-void Index::addFile(const fs::path& path) 
+void Index::addFile(const fs::path& path)
 {
     addFile(path, (int) document_paths_.size());
 }
@@ -40,6 +40,7 @@ void Index::addFile(const fs::path& path, int document_id)
 
     std::ifstream fin(path);
     if (!fin.bad()) {
+        std::vector< std::pair<std::string, std::streamoff> > file_tokens;
 
         std::streampos word_start = 0;
         std::string word;
@@ -48,7 +49,13 @@ void Index::addFile(const fs::path& path, int document_id)
             word_start = fin.tellg();
             fin >> word;
 
-            addToken(normalizeToken(word), {document_id, word_start});
+            file_tokens.push_back(std::make_pair(normalizeToken(word), word_start));
+        }
+
+        token_positions_.reserve(file_tokens.size());
+
+        for (auto& [token, position] : file_tokens) {
+            addToken(token, {document_id, position});
         }
 
     } else {
@@ -137,15 +144,15 @@ Index Index::load(fs::path path)
     }
 }
 
-void Index::addToken(std::string word, TokenPosition position) 
+void Index::addToken(std::string token, TokenPosition position) 
 {
-    if (word.empty()) return;
+    if (token.empty()) return;
 
-    auto result = token_positions_.find(word);
+    auto result = token_positions_.find(token);
     if (result != token_positions_.end()){
         result->second.emplace_back(position);
     } else {
-        token_positions_.emplace(word, std::list<TokenPosition> {position});
+        token_positions_.insert(std::make_pair(token, std::list<TokenPosition> {position}));
     }
 }
 
