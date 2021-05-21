@@ -27,7 +27,7 @@ std::string user_input::promptOnce() noexcept {
     return input;
 }
 
-size_t promptSize(std::string value_name) noexcept
+size_t user_input::promptSize(std::string value_name) noexcept
 {
     while (true) {
         std::cout << "enter " << value_name << ": ";

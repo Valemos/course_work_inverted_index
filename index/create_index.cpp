@@ -13,7 +13,7 @@
 int main(int, char**) {
     boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::debug);
     
-    IndexBuilder builder(user_input::promptSize("threads number"));
+    IndexBuilder builder((int) user_input::promptSize("threads number"));
     builder.indexDirectory(user_input::promptExistingDirectory());
     
     builder.getIndex().save("./index.bin");
