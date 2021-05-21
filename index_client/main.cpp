@@ -17,8 +17,7 @@ int main(int, char**) {
 
     do {
         try {
-            client.connect(boost::asio::ip::make_address("127.0.0.1"), 40000);
-            // client.connect(user_input::promptIpAddress(), 40000);
+            client.connect(user_input::promptIpAddress(), 40000);
             
             while (true) {
                 std::cout << "enter query: " << std::endl;

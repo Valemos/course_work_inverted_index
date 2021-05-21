@@ -14,11 +14,9 @@ int main(int, char**) {
     boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::debug);
     
     IndexBuilder builder(user_input::promptSize("threads number"));
-    builder.indexDirectory("datasets/data/aclImdb/test/neg");
-    // builder.indexDirectory(user_input::promptExistingDirectory());
+    builder.indexDirectory(user_input::promptExistingDirectory());
     
-    // std::cout << "enter save path: " << std::endl;
-    // builder.getIndex().save(user_input::promptOnce());
+    builder.getIndex().save("./index.bin");
 
     return 0;
 }
