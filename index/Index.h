@@ -24,6 +24,7 @@ public:
     Index(size_t total_files);
 
     size_t getTotalFiles() const noexcept;
+    const std::unordered_map<std::string, std::list<TokenPosition>>& getAllPositions() const noexcept;
     
     // to avoid document_id collisions, must use only one type of addFile function 
     void addFile(const fs::path& path, int document_id);

@@ -30,8 +30,6 @@ void IndexSearchServer::handleClientQueries(tcp::socket sock) {
 
     while (true) {
         try {
-            BOOST_LOG_TRIVIAL(debug) << "before receive";
-            
             std::string query = socket_data_exchange::receiveString(sock);
             
             BOOST_LOG_TRIVIAL(debug) << "client query: \"" << query << '"';
@@ -43,7 +41,7 @@ void IndexSearchServer::handleClientQueries(tcp::socket sock) {
             socket_data_exchange::sendSerialized(sock, results);
             BOOST_LOG_TRIVIAL(debug) << "results sent";
 
-        } catch (boost::system::system_error& err) {
+        } catch (std::runtime_error& err) {
             BOOST_LOG_TRIVIAL(error) << err.what();
             break;
         }

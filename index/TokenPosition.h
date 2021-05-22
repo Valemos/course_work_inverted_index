@@ -8,19 +8,19 @@ class TokenPosition {
 
 public:
 
-    TokenPosition() : document_index(0), start(0) {};
-    TokenPosition(int document_index, std::streamoff start) : 
-        document_index(document_index), start(start) {}
+    TokenPosition() : document_id(0), start(0) {};
+    TokenPosition(int document_id, std::streamoff start) : 
+        document_id(document_id), start(start) {}
 
-    int document_index;
+    int document_id;
     std::streamoff start;
 
 
     bool operator<(const TokenPosition& other) const {
         // document index has priority over token start
-        if (document_index > other.document_index){
+        if (document_id > other.document_id){
             return false;
-        } else if (document_index == other.document_index) {
+        } else if (document_id == other.document_id) {
             return start < other.start;
         } else {
             return true;
@@ -28,7 +28,7 @@ public:
     }
 
     bool operator==(const TokenPosition& other) const {
-        return document_index == other.document_index && start == other.start;
+        return document_id == other.document_id && start == other.start;
     }
 
 private:
@@ -36,7 +36,7 @@ private:
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version) {
-        ar & document_index;
+        ar & document_id;
         ar & start;
     }
 };

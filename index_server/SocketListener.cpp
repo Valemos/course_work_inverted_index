@@ -17,7 +17,7 @@ SocketListener::SocketListener(unsigned short port) :
 
 void SocketListener::setConnectionHandler(std::function<void(tcp::socket)> handler) 
 {
-    listen_handler_ = handler;
+    new_connection_handler_ = handler;
 }
 
 void SocketListener::start() 
@@ -38,13 +38,13 @@ void SocketListener::acceptNext()
 
 void SocketListener::handleConnection(const boost::system::error_code & err, tcp::socket sock) {
     if (err) {
-        BOOST_LOG_TRIVIAL(info) << "Error occured: " << err.message() << std::endl;
+        BOOST_LOG_TRIVIAL(error) << "Error occured: " << err.message() << std::endl;
         sock.close();
         acceptNext();
         return;
     }
 
-    std::thread client_thread(listen_handler_, std::move(sock));
+    std::thread client_thread(new_connection_handler_, std::move(sock));
     client_thread.detach();
 
     acceptNext();

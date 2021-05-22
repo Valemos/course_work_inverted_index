@@ -20,7 +20,7 @@ public:
     void acceptNext();
 
 private:
-    std::function<void(tcp::socket)> listen_handler_;
+    std::function<void(tcp::socket)> new_connection_handler_;
 
     // bind at start to reuse lambda expression in acceptNext
     std::function<void(const boost::system::error_code &, tcp::socket)> connection_acceptor_;

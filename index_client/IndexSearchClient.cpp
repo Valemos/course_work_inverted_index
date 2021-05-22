@@ -27,7 +27,7 @@ void IndexSearchClient::printResults(const std::vector<SearchResult>& results) c
     if (!results.empty()) {
         std::cout << "found positions:" << std::endl;
         for (auto& result : results) {
-            std::cout << "doc: " << result.position.document_index 
+            std::cout << "doc: " << result.position.document_id 
                     << " pos: " << result.position.start
                     << " context: " << result.context << std::endl;
         }

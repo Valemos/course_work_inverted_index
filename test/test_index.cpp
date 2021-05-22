@@ -9,7 +9,8 @@ namespace fs = std::filesystem;
 
 
 class IndexTempFilesTest : public ::testing::Test {
-
+    friend class Index;
+    
 protected:
 
     fs::path temp_dir_ {".\\test_temp"};
@@ -35,7 +36,7 @@ protected:
         writeToTemp("words test test", temp_files_[0]);
         writeToTemp("test other here", temp_files_[1]);
         writeToTemp("", temp_files_[2]);
-        writeToTemp("unique contents", temp_files_[3]);
+        writeToTemp("unique, (contents)", temp_files_[3]);
         writeToTemp("1234567890 24564564\n433443", temp_files_[4]);
 
         for (auto& file : temp_files_) {
@@ -77,6 +78,14 @@ TEST_F(IndexTempFilesTest, FindTwoWordsInDocument){
     EXPECT_EQ(search_results[1].position, TokenPosition(1, 4));
 };
 
+TEST_F(IndexTempFilesTest, TestAllWordsIncludedInIndex) {
+    int tokens_count = 0;
+    for (auto& [token, positions] : index_.getAllPositions()){
+        tokens_count += (int) positions.size();
+    }
+    ASSERT_EQ(tokens_count, 11);
+};
+
 TEST_F(IndexTempFilesTest, TestIndexSerialization) {
     index_.save(temp_dir_ / "index");
 
@@ -98,23 +107,14 @@ TEST_F(IndexTempFilesTest, IndexBuilder_MultithreadedEqualToSingleThreaded) {
     EXPECT_TRUE(builder.getIndex() == single_threaded);
 };
 
-TEST(IndexBuildTest, FailToCreateFromNonExistingDirectory) {
+TEST(IndexExceptionsTest, FailToCreateFromNonExistingDirectory) {
     IndexBuilder builder(4);
-    try {
-        builder.indexDirectory("./nonexisting");
-        FAIL() << "not failed on not existing directory";
-    } catch (std::exception& err) {
-        EXPECT_TRUE(builder.getIndex() == Index()) << err.what();
-    }
-}
-
-TEST(IndexBuildTest, FailToAddNotExistingFile) {
-    auto index = Index();
-    try {
-        index.addFile("nonexisting.txt");
-        FAIL() << "not failed on not existing file";
-    } catch (std::exception& err) {
-        EXPECT_TRUE(index == Index()) << err.what();
-    }
+    EXPECT_THROW(builder.indexDirectory("./nonexisting"), std::runtime_error);
 };
 
+TEST(IndexExceptionsTest, FailToAddNotExistingFile) {
+    Index index;
+
+    EXPECT_THROW(index.addFile("nonexisting.txt"), std::runtime_error);
+    EXPECT_TRUE(index == Index());
+};

@@ -36,32 +36,32 @@ void Index::addFile(const fs::path& path, int document_id)
         throw std::runtime_error("path does not exist " + path.string());
     }
 
-    document_paths_.emplace(document_id, path.string());
-
     std::ifstream fin(path);
-    if (!fin.bad()) {
-        std::vector< std::pair<std::string, std::streamoff> > file_tokens;
-
-        std::streampos word_start = 0;
-        std::string word;
-        while(!fin.eof()) {
-
-            word_start = fin.tellg();
-            fin >> word;
-
-            file_tokens.push_back(std::make_pair(normalizeToken(word), word_start));
-        }
-
-        token_positions_.reserve(file_tokens.size());
-
-        for (auto& [token, position] : file_tokens) {
-            addToken(token, {document_id, position});
-        }
-
-    } else {
-        BOOST_LOG_TRIVIAL(error) << "cannot read file " << path;
+    if (fin.bad()) {
         throw std::runtime_error("cannot read file " + path.string());
     }
+    
+    document_paths_.emplace(document_id, path.string());
+    // TODO: optimize file_tokens vector for this algorithm
+    std::vector< std::pair<std::string, std::streamoff> > file_tokens;
+
+    std::streampos word_start = 0;
+    std::string word;
+    while(!fin.eof()) {
+
+        word_start = fin.tellg();
+        fin >> word;
+
+        file_tokens.push_back(std::make_pair(normalizeToken(word), word_start));
+    }
+
+    // TODO: fix merging current tokens to global index positions
+    token_positions_.reserve(file_tokens.size());
+
+    for (auto& [token, position] : file_tokens) {
+        addToken(token, {document_id, position});
+    }
+
 }
 
 void Index::mergeIndex(Index& other) 
@@ -104,7 +104,7 @@ std::vector<SearchResult> Index::find(const std::string& query) const
         }
 
         if (positions_found.empty()) {
-            // stop further checks of tokens
+            // stop checks for other tokens
             break;
         } 
     }
@@ -120,28 +120,27 @@ void Index::reserve(size_t file_count)
 void Index::save(fs::path path) const
 {
     std::ofstream fout {fs::absolute(path), std::ios::binary};
-    if (!fout.bad()){
-        boost::archive::binary_oarchive archive {fout};
-        archive << *this;
-    } else {
+    if (fout.bad()){
         throw std::runtime_error("cannot save index to file " + path.string());
     }
+
+    boost::archive::binary_oarchive archive {fout};
+    archive << *this;
 }
 
 Index Index::load(fs::path path) 
 {
     std::ifstream fin {fs::absolute(path), std::ios::binary};
-    if (!fin.bad()){
-        boost::archive::binary_iarchive archive {fin};
-        Index index;
-        archive >> index;
-        BOOST_LOG_TRIVIAL(debug) << "index loaded from " << path;
-
-        return index;
-        
-    } else {
+    if (fin.bad()){
         throw std::runtime_error("cannot read index from file " + path.string());
     }
+    
+    boost::archive::binary_iarchive archive {fin};
+    Index index;
+    archive >> index;
+    BOOST_LOG_TRIVIAL(debug) << "index loaded from " << path;
+
+    return index;
 }
 
 void Index::addToken(std::string token, TokenPosition position) 
@@ -177,9 +176,10 @@ std::string Index::normalizeToken(const std::string& word)
 
 std::string Index::readTermContext(const TokenPosition& position, int context_radius) const
 {
-    auto id_path = document_paths_.find(position.document_index);
+    auto id_path = document_paths_.find(position.document_id);
     if (id_path == document_paths_.end()) {
-        throw std::runtime_error("Programmer error! cannot find file path with id provided.");
+        BOOST_LOG_TRIVIAL(warning) << "file id was not found while reading context from term position";
+        return "";
     }
 
     return readTermContext(id_path->second, position.start, context_radius);
@@ -187,30 +187,35 @@ std::string Index::readTermContext(const TokenPosition& position, int context_ra
 
 std::string Index::readTermContext(const fs::path& file_path, std::streamoff word_start, int context_radius) const
 {
-    auto read_start = std::max(word_start - context_radius, (std::streamoff) 0);
-    auto read_start_size = std::min(word_start, (std::streamoff) context_radius);
+    auto left_context_start = std::max(word_start - context_radius, (std::streamoff) 0);
+    auto left_context_size = std::min(word_start, (std::streamoff) context_radius);
 
     std::stringstream result_stream;
 
     std::ifstream fin(file_path);
-    if (fin.good()) {
-        fin.seekg(read_start);
-
-        std::string context;
-        context.resize(read_start_size, '\0'); 
-
-        fin.get(&context[0], read_start_size);
-        result_stream << context;
-
-        std::string line;
-        fin >> line;
-        result_stream << line;
-
-        context.replace(0, context.size(), context.size(), '\0');
-        context.resize(context_radius, '\0');
-        fin.get(&context[0], context_radius);
-        result_stream << context;
+    if (fin.bad()) {
+        return ""; 
     }
+
+    fin.seekg(left_context_start);
+
+    std::string context;
+    context.resize(left_context_size, '\0'); 
+
+    // read context from left
+    fin.get(&context[0], left_context_size);
+    result_stream << context;
+
+    // read word
+    std::string word;
+    fin >> word;
+    result_stream << word;
+
+    // read context from right
+    context.replace(0, context.size(), context.size(), '\0');
+    context.resize(context_radius, '\0');
+    fin.get(&context[0], context_radius);
+    result_stream << context;
 
     return result_stream.str();
 }
@@ -230,9 +235,9 @@ std::list<TokenPosition> Index::getIntersectionByDocument(const std::list<TokenP
     std::list<TokenPosition> result;
     auto it1 = first.begin(), it2 = second.begin();
     while (it1 != first.end() && it2 != second.end()) {
-        if (it1->document_index < it2->document_index) {
+        if (it1->document_id < it2->document_id) {
             it1++;
-        } else if (it2->document_index < it1->document_index) {
+        } else if (it2->document_id < it1->document_id) {
             it2++;
         } else {
             result.emplace_back(*it1);
@@ -285,4 +290,9 @@ std::vector<SearchResult> Index::readPositionsContext(const std::list<TokenPosit
     }
 
     return results;
+}
+
+const std::unordered_map<std::string, std::list<TokenPosition>>& Index::getAllPositions() const noexcept
+{
+    return token_positions_;
 }
