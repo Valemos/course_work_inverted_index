@@ -52,6 +52,8 @@ void IndexBuilder::indexDirectory(fs::path directory)
     for (auto& index : partial_indices_) {
         result_.mergeIndex(index);
     }
+    
+    partial_indices_.clear();
 }
 
 const Index& IndexBuilder::getIndex() 
