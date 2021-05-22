@@ -32,36 +32,22 @@ void Index::addFile(const fs::path& path)
 
 void Index::addFile(const fs::path& path, int document_id)
 {
-    if (!fs::exists(path)) {
-        throw std::runtime_error("path does not exist " + path.string());
-    }
-
-    std::ifstream fin(path);
-    if (fin.bad()) {
-        throw std::runtime_error("cannot read file " + path.string());
-    }
-    
+    auto file_tokens = getFileTokens(path);
     document_paths_.emplace(document_id, path.string());
-    // TODO: optimize file_tokens vector for this algorithm
-    std::vector< std::pair<std::string, std::streamoff> > file_tokens;
 
-    std::streampos word_start = 0;
-    std::string word;
-    while(!fin.eof()) {
-
-        word_start = fin.tellg();
-        fin >> word;
-
-        file_tokens.push_back(std::make_pair(normalizeToken(word), word_start));
+    // determine necessary size for new elements
+    size_t unique_count = 0;
+    for (auto& token_pair : file_tokens) {
+        if (!token_positions_.contains(token_pair.first)) {
+            unique_count++;
+        }
     }
 
-    // TODO: fix merging current tokens to global index positions
-    token_positions_.reserve(file_tokens.size());
+    token_positions_.reserve(token_positions_.size() + unique_count);
 
     for (auto& [token, position] : file_tokens) {
         addToken(token, {document_id, position});
     }
-
 }
 
 void Index::mergeIndex(Index& other) 
@@ -104,7 +90,6 @@ std::vector<SearchResult> Index::find(const std::string& query) const
         }
 
         if (positions_found.empty()) {
-            // stop checks for other tokens
             break;
         } 
     }
@@ -153,6 +138,32 @@ void Index::addToken(std::string token, TokenPosition position)
     } else {
         token_positions_.insert(std::make_pair(token, std::list<TokenPosition> {position}));
     }
+}
+
+std::vector< std::pair<std::string, std::streamoff> > Index::getFileTokens(const fs::path& path) const
+{
+    if (!fs::exists(path)) {
+        throw std::runtime_error("path does not exist " + path.string());
+    }
+
+    std::ifstream fin(path);
+    if (fin.bad()) {
+        throw std::runtime_error("cannot read file " + path.string());
+    }
+    
+    std::vector< std::pair<std::string, std::streamoff> > file_tokens;
+    
+    std::streampos word_start = 0;
+    std::string word;
+    while(!fin.eof()) {
+
+        word_start = fin.tellg();
+        fin >> word;
+
+        file_tokens.push_back(std::make_pair(normalizeToken(word), word_start));
+    }
+
+    return file_tokens;
 }
 
 std::string Index::normalizeToken(const std::string& word)

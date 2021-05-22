@@ -49,6 +49,7 @@ private:
     // preprocess query
     static std::vector<std::string> tokenizeQuery(const std::string& query);
     static std::string normalizeToken(const std::string& word);
+    std::vector< std::pair<std::string, std::streamoff> > getFileTokens(const fs::path& path) const;
 
     // add and get tokens with positions
     void addToken(std::string word, TokenPosition position);
