@@ -28,13 +28,12 @@ void IndexBuilder::indexDirectory(fs::path directory)
     int current_index = 0;
     for (auto& entry : fs::recursive_directory_iterator(fs::absolute(directory))) {
         if (entry.is_regular_file()) {
-            auto* index_ptr = &partial_indices_[current_index];
+            auto index = partial_indices_[current_index];
 
             // index will be located in the same root as target directory
             auto path = directory / fs::relative(entry.path(), directory);
 
-            auto task = [index_ptr, path, file_id]() { index_ptr->addFile(path, file_id); };
-            boost::asio::post(builder_pool_, task);
+            boost::asio::post(builder_pool_, [&index, path, file_id]() { index.addFile(path, file_id); });
 
             file_id++;
             current_index = (current_index + 1) % partial_indices_.size();

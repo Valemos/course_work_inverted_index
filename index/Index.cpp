@@ -35,7 +35,7 @@ void Index::addFile(const fs::path& path, int document_id)
     auto file_tokens = getFileTokens(path);
     document_paths_.emplace(document_id, path.string());
 
-    // determine necessary size for new elements
+    // determine required size for new elements
     size_t unique_count = 0;
     for (auto& token_pair : file_tokens) {
         if (!token_positions_.contains(token_pair.first)) {
@@ -43,6 +43,7 @@ void Index::addFile(const fs::path& path, int document_id)
         }
     }
 
+    // TODO: add empirical constant instead of loop for performance test
     token_positions_.reserve(token_positions_.size() + unique_count);
 
     for (auto& [token, position] : file_tokens) {
@@ -52,9 +53,7 @@ void Index::addFile(const fs::path& path, int document_id)
 
 void Index::mergeIndex(Index& other) 
 {
-    for (auto& id_path : other.document_paths_) {
-        document_paths_.emplace(id_path.first, id_path.second);
-    }
+    document_paths_.insert(other.document_paths_.begin(), other.document_paths_.end());
 
     for (auto& [other_token, other_positions] : other.token_positions_) {
         auto token_search = token_positions_.find(other_token);
@@ -62,9 +61,8 @@ void Index::mergeIndex(Index& other)
             // create new token
             token_positions_.emplace(other_token, other_positions);
         } else {
-            // insert existing
-            auto& token_list = token_search->second;
-            token_list.splice(token_list.end(), other_positions);
+            // merge two lists for existing token
+            token_search->second.splice(token_search->second.end(), other_positions);
         }
     }
 }
@@ -123,7 +121,7 @@ Index Index::load(fs::path path)
     boost::archive::binary_iarchive archive {fin};
     Index index;
     archive >> index;
-    BOOST_LOG_TRIVIAL(debug) << "index loaded from " << path;
+    BOOST_LOG_TRIVIAL(info) << "index loaded from " << path;
 
     return index;
 }
@@ -160,7 +158,7 @@ std::vector< std::pair<std::string, std::streamoff> > Index::getFileTokens(const
         word_start = fin.tellg();
         fin >> word;
 
-        file_tokens.push_back(std::make_pair(normalizeToken(word), word_start));
+        file_tokens.emplace_back(std::make_pair(normalizeToken(word), word_start));
     }
 
     return file_tokens;

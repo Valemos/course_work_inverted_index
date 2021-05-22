@@ -27,8 +27,8 @@ public:
     const std::unordered_map<std::string, std::list<TokenPosition>>& getAllPositions() const noexcept;
     
     // to avoid document_id collisions, must use only one type of addFile function 
-    void addFile(const fs::path& path, int document_id);
     void addFile(const fs::path& path);
+    void addFile(const fs::path& path, int document_id);
     
     // invalidates other index in process
     void mergeIndex(Index& other);

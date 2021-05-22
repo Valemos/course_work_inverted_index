@@ -12,9 +12,8 @@ namespace fs = std::filesystem;
 class IndexBuilder {
 
 public:
-    IndexBuilder();
-    IndexBuilder(int threads_count);
-
+    explicit IndexBuilder();
+    explicit IndexBuilder(int threads_count);
 
     void indexDirectory(fs::path directory);
     const Index& getIndex();

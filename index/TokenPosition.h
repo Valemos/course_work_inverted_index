@@ -8,8 +8,7 @@ class TokenPosition {
 
 public:
 
-    TokenPosition() : document_id(0), start(0) {};
-    TokenPosition(int document_id, std::streamoff start) : 
+    TokenPosition(int document_id = 0, std::streamoff start = 0) : 
         document_id(document_id), start(start) {}
 
     int document_id;
