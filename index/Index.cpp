@@ -75,7 +75,8 @@ std::vector<SearchResult> Index::find(const std::string& query) const
     bool is_first_token = true;
 
     for (auto& token : tokens) {
-
+        if (token.empty()) continue;
+        
         auto token_positions = getPositionsForToken(token);
         if (token_positions.has_value()){
             if (is_first_token) {
