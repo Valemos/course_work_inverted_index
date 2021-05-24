@@ -12,7 +12,7 @@ IndexSearchServer::IndexSearchServer(std::filesystem::path index_path, unsigned 
     index_(Index::load(index_path)), listener_(port)
 {
     listener_.setConnectionHandler(
-        [this] (auto sock) { handleClientQueries(std::move(sock)); }
+        [this] (auto sock) { handleClientQuerу(std::move(sock)); }
     );
 }
 
@@ -22,29 +22,26 @@ void IndexSearchServer::start()
 }
 
 
-void IndexSearchServer::handleClientQueries(tcp::socket sock) {
+void IndexSearchServer::handleClientQuerу(tcp::socket sock) {
     BOOST_LOG_TRIVIAL(info) << sock.remote_endpoint().address().to_string()
                             << ':'
                             << sock.remote_endpoint().port()
                             << " connected";
 
-    while (true) {
-        try {
-            std::string query = socket_data_exchange::receiveString(sock);
-            
-            BOOST_LOG_TRIVIAL(debug) << "client query: \"" << query << '"';
+    try {
+        std::string query = socket_data_exchange::receiveString(sock);
+        
+        BOOST_LOG_TRIVIAL(debug) << "client query: \"" << query << '"';
 
-            auto results = index_.find(query);
+        auto results = index_.find(query);
 
-            BOOST_LOG_TRIVIAL(debug) << "results size: " << results.size();
+        BOOST_LOG_TRIVIAL(debug) << "results size: " << results.size();
 
-            socket_data_exchange::sendSerialized(sock, results);
-            BOOST_LOG_TRIVIAL(debug) << "results sent";
+        socket_data_exchange::sendSerialized(sock, results);
+        BOOST_LOG_TRIVIAL(debug) << "results sent";
 
-        } catch (std::runtime_error& err) {
-            BOOST_LOG_TRIVIAL(error) << err.what();
-            break;
-        }
+    } catch (std::runtime_error& err) {
+        BOOST_LOG_TRIVIAL(error) << err.what();
     }
 
     sock.close();

@@ -23,7 +23,7 @@ private:
     Index index_;
     SocketListener listener_;
 
-    void handleClientQueries(tcp::socket sock);
+    void handleClientQuerу(tcp::socket sock);
 };
 
 #endif // __INDEXSEARCHSERVER_H__

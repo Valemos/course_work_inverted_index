@@ -17,14 +17,18 @@ int main(int, char**) {
 
     do {
         try {
-            client.connect(user_input::promptIpAddress(), 40000);
+            auto address = user_input::promptIpAddress();
             
             while (true) {
+                client.connect(address, 40000);
+
                 std::cout << "enter query: " << std::endl;
                 auto query = user_input::promptOnce();
 
                 auto results = client.searchIndex(query);
                 client.printResults(results);
+                
+                client.disconnect();
             };   
             
         } catch (boost::system::system_error& err) {

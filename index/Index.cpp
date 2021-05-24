@@ -33,7 +33,7 @@ void Index::addFile(const fs::path& path)
 void Index::addFile(const fs::path& path, int document_id)
 {
     auto file_tokens = getFileTokens(path);
-    document_paths_.emplace(document_id, path.string());
+    document_paths_.insert(std::make_pair(document_id, path.string()));
 
     // determine required size for new elements
     size_t unique_count = 0;
@@ -131,10 +131,10 @@ void Index::addToken(std::string token, TokenPosition position)
     if (token.empty()) return;
 
     auto result = token_positions_.find(token);
-    if (result != token_positions_.end()){
-        result->second.emplace_back(position);
-    } else {
+    if (result == token_positions_.end()){
         token_positions_.insert(std::make_pair(token, std::list<TokenPosition> {position}));
+    } else {
+        result->second.emplace_back(position);
     }
 }
 

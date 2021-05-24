@@ -28,7 +28,7 @@ void IndexBuilder::indexDirectory(fs::path directory)
     int current_index = 0;
     for (auto& entry : fs::recursive_directory_iterator(fs::absolute(directory))) {
         if (entry.is_regular_file()) {
-            auto index = partial_indices_[current_index];
+            auto& index = partial_indices_[current_index];
 
             // paths will be relative to folder where index was built
             auto path = directory / fs::relative(entry.path(), directory);
