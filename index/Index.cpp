@@ -43,7 +43,6 @@ void Index::addFile(const fs::path& path, int document_id)
         }
     }
 
-    // TODO: add empirical constant instead of loop for performance test
     token_positions_.reserve(token_positions_.size() + unique_count);
 
     for (auto& [token, position] : file_tokens) {

@@ -30,7 +30,7 @@ void IndexBuilder::indexDirectory(fs::path directory)
         if (entry.is_regular_file()) {
             auto index = partial_indices_[current_index];
 
-            // index will be located in the same root as target directory
+            // paths will be relative to folder where index was built
             auto path = directory / fs::relative(entry.path(), directory);
 
             boost::asio::post(builder_pool_, [&index, path, file_id]() { index.addFile(path, file_id); });
@@ -47,6 +47,7 @@ void IndexBuilder::indexDirectory(fs::path directory)
         total_files += index.getTotalFiles();
     }
 
+    result_ = Index();
     result_.reserve(total_files);
     for (auto& index : partial_indices_) {
         result_.mergeIndex(index);
