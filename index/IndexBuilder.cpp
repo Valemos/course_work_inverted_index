@@ -35,7 +35,9 @@ void IndexBuilder::indexDirectory(fs::path directory)
             // paths will be relative to folder where index was built
             auto path = directory / fs::relative(entry.path(), directory);
 
-            BOOST_LOG_TRIVIAL(trace) << "posted for file " << entry.path().stem() << " id: " << file_id << " index " << current_index;
+            BOOST_LOG_TRIVIAL(trace) << "posted for file " << entry.path().stem() 
+                                    << " id: " << file_id 
+                                    << " index " << current_index;
             boost::asio::post(builder_pool_, [&index, path, file_id]() { index.addFile(path, file_id); });
 
             file_id++;
