@@ -6,9 +6,10 @@
 
 #include "index/Index.h"
 #include "index/IndexBuilder.h"
+#include "misc/user_input.h"
 
 
-void measureAverageTime(std::function<void()> task, int repeat_number = 5) {
+void measureAverageTime(std::function<void()> task, int repeat_number) {
     double total_time {0};
 
     for (int i = 0; i < repeat_number; i++) {
@@ -28,7 +29,8 @@ void measureAverageTime(std::function<void()> task, int repeat_number = 5) {
 
 
 int main(int argc, const char** argv) {
-    std::filesystem::path index_dir {"D:\\coding\\c_c++\\concurrent_index_course_work\\datasets\\data\\aclImdb\\test\\neg"};
+    const int repeats_for_average = 5;
+    std::filesystem::path index_dir {user_input::promptExistingDirectory()};
 
     auto index_task = [index_dir](int threads_number){
         IndexBuilder builder;
@@ -45,12 +47,14 @@ int main(int argc, const char** argv) {
     };
 
     std::cout << "single threaded task: " << std::endl; 
-    measureAverageTime(single_threaded_task, 10);
+    measureAverageTime(single_threaded_task, repeats_for_average);
 
-    for (auto threads_number : std::vector<int> {1, 2, 4, 8}) {
+    for (auto threads_number : std::vector<int> {1, 2, 4, 8, 16, 32}) {
         std::cout << std::endl << threads_number << " threads:" << std::endl;
-        measureAverageTime(std::bind(index_task, threads_number), 10);
+        measureAverageTime(std::bind(index_task, threads_number), repeats_for_average);
     }
+
+    std::cin.get();
 
     return 0;
 }
