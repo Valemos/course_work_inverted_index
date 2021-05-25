@@ -33,7 +33,9 @@ void Index::addFile(const fs::path& path)
 void Index::addFile(const fs::path& path, int document_id)
 {
     auto file_tokens = getFileTokens(path);
+    BOOST_LOG_TRIVIAL(trace) << "file tokens obtained";
     document_paths_.insert(std::make_pair(document_id, path.string()));
+    BOOST_LOG_TRIVIAL(trace) << "inserted new document path";
 
     // determine required size for new elements
     size_t unique_count = 0;
@@ -43,11 +45,13 @@ void Index::addFile(const fs::path& path, int document_id)
         }
     }
 
+    BOOST_LOG_TRIVIAL(trace) << "new positions map size " << token_positions_.size() + unique_count;
     token_positions_.reserve(token_positions_.size() + unique_count);
 
     for (auto& [token, position] : file_tokens) {
         addToken(token, {document_id, position});
     }
+    BOOST_LOG_TRIVIAL(trace) << "new tokens added";
 }
 
 void Index::mergeIndex(Index& other) 
@@ -174,7 +178,10 @@ std::string Index::normalizeToken(const std::string& word)
             letter != '?' && 
             letter != '!' && 
             letter != '(' && 
-            letter != ')')
+            letter != ')' && 
+            letter != '"' && 
+            letter != '"' && 
+            letter != '\'')
         {
             ss << std::tolower(letter, std::locale());
         }

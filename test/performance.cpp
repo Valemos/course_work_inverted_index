@@ -4,6 +4,10 @@
 #include <functional>
 #include <filesystem>
 
+#include <boost/log/core.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+
 #include "index/Index.h"
 #include "index/IndexBuilder.h"
 #include "misc/user_input.h"
@@ -13,15 +17,18 @@ void measureAverageTime(std::function<void()> task, int repeat_number) {
     double total_time {0};
 
     for (int i = 0; i < repeat_number; i++) {
-        
-        auto start = std::chrono::high_resolution_clock::now();
-        task();
-        auto end = std::chrono::high_resolution_clock::now();
+        try {
+            auto start = std::chrono::high_resolution_clock::now();
+            task();
+            auto end = std::chrono::high_resolution_clock::now();
 
-        auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        
-        total_time += time.count();
-        std::cout << "\trun " << i + 1 << " time: " << time.count() << "ms" << std::endl;
+            auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            
+            total_time += time.count();
+            std::cout << "\trun " << i + 1 << "> time: " << time.count() << "ms" << std::endl;   
+        } catch (std::exception& err) {
+            std::cout << "\trun " << i + 1 << "> error: "<< err.what() << std::endl;
+        }
     }
 
     std::cout << "average time: " << total_time / repeat_number << "ms" << std::endl;
@@ -29,13 +36,11 @@ void measureAverageTime(std::function<void()> task, int repeat_number) {
 
 
 int main(int argc, const char** argv) {
-    const int repeats_for_average = 5;
-    std::filesystem::path index_dir {user_input::promptExistingDirectory()};
+    boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::trace);
 
-    auto index_task = [index_dir](int threads_number){
-        IndexBuilder builder;
-        builder.indexDirectory(index_dir);
-    };
+    const int repeats_for_average = 10;
+    std::filesystem::path index_dir {"D:/coding/c_c++/concurrent_index_course_work/datasets/data/aclImdb/test/neg"};
+    // std::filesystem::path index_dir {user_input::promptExistingDirectory()};
 
     auto single_threaded_task = [index_dir](){
         Index index;
@@ -46,12 +51,19 @@ int main(int argc, const char** argv) {
         }
     };
 
-    std::cout << "single threaded task: " << std::endl; 
-    measureAverageTime(single_threaded_task, repeats_for_average);
-
-    for (auto threads_number : std::vector<int> {1, 2, 4, 8, 16, 32}) {
+    // std::cout << "single threaded task: " << std::endl; 
+    // measureAverageTime(single_threaded_task, repeats_for_average);
+    IndexBuilder* builder {nullptr};
+    for (auto threads_number : std::vector<int> {2, 4, 8}) {
         std::cout << std::endl << threads_number << " threads:" << std::endl;
-        measureAverageTime(std::bind(index_task, threads_number), repeats_for_average);
+
+        auto index_task = [&index_dir, threads_number, &builder](){
+            builder = new IndexBuilder(threads_number);
+            builder->indexDirectory(index_dir);
+            delete builder;
+        };
+
+        measureAverageTime(index_task, repeats_for_average);
     }
 
     std::cin.get();

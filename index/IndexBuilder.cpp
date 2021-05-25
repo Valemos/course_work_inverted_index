@@ -1,5 +1,7 @@
 #include "IndexBuilder.h"
 
+#include <boost/log/trivial.hpp>
+
 #include <thread>
 #include <functional>
 #include <boost/asio/post.hpp>
@@ -33,6 +35,7 @@ void IndexBuilder::indexDirectory(fs::path directory)
             // paths will be relative to folder where index was built
             auto path = directory / fs::relative(entry.path(), directory);
 
+            BOOST_LOG_TRIVIAL(trace) << "posted for file " << entry.path().stem() << " id: " << file_id << " index " << current_index;
             boost::asio::post(builder_pool_, [&index, path, file_id]() { index.addFile(path, file_id); });
 
             file_id++;
@@ -40,7 +43,9 @@ void IndexBuilder::indexDirectory(fs::path directory)
         }
     }
 
+    BOOST_LOG_TRIVIAL(trace) << "awaiting for tasks to finish";
     builder_pool_.join();
+    BOOST_LOG_TRIVIAL(trace) << "partial build finished";
 
     size_t total_files = 0;
     for (auto& index : partial_indices_) {
@@ -52,7 +57,8 @@ void IndexBuilder::indexDirectory(fs::path directory)
     for (auto& index : partial_indices_) {
         result_.mergeIndex(index);
     }
-    
+    BOOST_LOG_TRIVIAL(trace) << "indices merged";
+
     partial_indices_.clear();
 }
 
