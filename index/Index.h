@@ -3,7 +3,7 @@
 
 #include <string>
 #include <list>
-#include <unordered_map>
+#include <map>
 #include <vector>
 #include <fstream>
 #include <filesystem>
@@ -21,10 +21,9 @@ class Index {
 
 public:
     Index() = default;
-    Index(size_t total_files);
 
     size_t getTotalFiles() const noexcept;
-    const std::unordered_map<std::string, std::list<TokenPosition>>& getAllPositions() const noexcept;
+    const std::map<std::string, std::list<TokenPosition>>& getAllPositions() const noexcept;
     
     // to avoid document_id collisions, must use only one type of addFile function 
     void addFile(const fs::path& path);
@@ -36,15 +35,14 @@ public:
     // query must be a set of words separated with spaces or a single word
     std::vector<SearchResult> find(const std::string& query) const;
 
-    void reserve(size_t file_count);
     void save(fs::path path) const;
     static Index load(fs::path path);
 
     bool operator==(const Index& other) const noexcept;
 
 private:
-    std::unordered_map<int, std::string> document_paths_;
-    std::unordered_map<std::string, std::list<TokenPosition>> token_positions_;
+    std::map<int, std::string> document_paths_;
+    std::map<std::string, std::list<TokenPosition>> token_positions_;
 
     // preprocess query
     static std::vector<std::string> tokenizeQuery(const std::string& query);

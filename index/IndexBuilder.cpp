@@ -47,13 +47,7 @@ void IndexBuilder::indexDirectory(fs::path directory)
     builder_pool_.join();
     BOOST_LOG_TRIVIAL(trace) << "partial build finished";
 
-    size_t total_files = 0;
-    for (auto& index : partial_indices_) {
-        total_files += index.getTotalFiles();
-    }
-
     result_ = Index();
-    result_.reserve(total_files);
     for (auto& index : partial_indices_) {
         result_.mergeIndex(index);
     }

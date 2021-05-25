@@ -10,15 +10,10 @@
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/unordered_map.hpp>
+#include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/string.hpp>
 
-
-Index::Index(size_t total_files) 
-{
-    reserve(total_files);
-}
 
 size_t Index::getTotalFiles() const noexcept
 {
@@ -36,17 +31,6 @@ void Index::addFile(const fs::path& path, int document_id)
     BOOST_LOG_TRIVIAL(trace) << "file tokens obtained";
     document_paths_.insert(std::make_pair(document_id, path.string()));
     BOOST_LOG_TRIVIAL(trace) << "inserted new document path";
-
-    // determine required size for new elements
-    size_t unique_count = 0;
-    for (auto& token_pair : file_tokens) {
-        if (!token_positions_.contains(token_pair.first)) {
-            unique_count++;
-        }
-    }
-
-    BOOST_LOG_TRIVIAL(trace) << "new positions map size " << token_positions_.size() + unique_count;
-    token_positions_.reserve(token_positions_.size() + unique_count);
 
     for (auto& [token, position] : file_tokens) {
         addToken(token, {document_id, position});
@@ -97,11 +81,6 @@ std::vector<SearchResult> Index::find(const std::string& query) const
     }
     
     return readPositionsContext(positions_found);
-}
-
-void Index::reserve(size_t file_count) 
-{
-    document_paths_.reserve(file_count);
 }
 
 void Index::save(fs::path path) const
@@ -308,7 +287,7 @@ std::vector<SearchResult> Index::readPositionsContext(const std::list<TokenPosit
     return results;
 }
 
-const std::unordered_map<std::string, std::list<TokenPosition>>& Index::getAllPositions() const noexcept
+const std::map<std::string, std::list<TokenPosition>>& Index::getAllPositions() const noexcept
 {
     return token_positions_;
 }
