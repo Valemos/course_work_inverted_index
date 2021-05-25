@@ -26,7 +26,6 @@ include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 endif()
 
-add_compile_definitions(_WIN32_WINNT=0x0601)
 
 add_library(index_lib index/Index.cpp index/IndexBuilder.cpp)
 include_directories(${PROJECT_SOURCE_DIR})
