@@ -2,10 +2,10 @@ Project implements index for quick search in directories with text files
 
 
 ### build requirements:
-CMake >=3.9.0
-C++ compiler capable of c++20 support
-C++ Boost library with support for Boost.Asio and Boost.Serialization
-visual c++ redistributable 2019
+  * CMake >=3.9.0
+  * C++ compiler capable of c++20 support
+  * C++ Boost library with support for Boost.Asio and Boost.Serialization
+  * Visual c++ redistributable 2019
 
 
 ### build process
