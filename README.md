@@ -5,6 +5,8 @@ Project implements index for quick search in directories with text files
 CMake >=3.9.0
 C++ compiler capable of c++20 support
 C++ Boost library with support for Boost.Asio and Boost.Serialization
+visual c++ redistributable 2019
+
 
 ### build process
 to build all executables for this project in cmd in the same folder as CMakeLists.txt should run these commands
