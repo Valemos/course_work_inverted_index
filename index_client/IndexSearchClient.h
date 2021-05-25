@@ -18,7 +18,7 @@ public:
     void connect(boost::asio::ip::address address, unsigned short port);
     void disconnect();
     std::vector<SearchResult> searchIndex(std::string query);
-    void printResults(const std::vector<SearchResult>& results) const;
+    static void printResults(const std::vector<SearchResult>& results);
 
 private:
     boost::asio::io_service service_;

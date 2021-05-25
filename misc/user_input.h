@@ -23,6 +23,7 @@ namespace user_input {
 
 std::string user_input::promptOnce() noexcept {
     std::string input;
+    std::cin.clear();
     std::getline(std::cin, input);
     return input;
 }
@@ -59,7 +60,7 @@ ip::address user_input::promptIpAddress() noexcept {
 fs::path user_input::promptExistingDirectory() noexcept {
     while (true) {
         std::cout << "enter directory path:" << std::endl;
-        auto path = fs::absolute(promptOnce());
+        auto path = promptOnce();
         if (fs::exists(path)) {
             return path;
         }

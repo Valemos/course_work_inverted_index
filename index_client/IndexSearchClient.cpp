@@ -22,7 +22,7 @@ std::vector<SearchResult> IndexSearchClient::searchIndex(std::string query)
     return results;
 }
 
-void IndexSearchClient::printResults(const std::vector<SearchResult>& results) const
+void IndexSearchClient::printResults(const std::vector<SearchResult>& results)
 {
     if (!results.empty()) {
         std::cout << "found positions:" << std::endl;

@@ -83,8 +83,12 @@ std::vector<SearchResult> Index::find(const std::string& query) const
     return readPositionsContext(positions_found);
 }
 
-void Index::save(fs::path path) const
+void Index::save(const fs::path& path) const
 {
+    if (!fs::exists(path)) {
+        throw std::runtime_error("file not exists " + path.string());
+    }
+
     std::ofstream fout {fs::absolute(path), std::ios::binary};
     if (fout.bad()){
         throw std::runtime_error("cannot save index to file " + path.string());
@@ -94,8 +98,12 @@ void Index::save(fs::path path) const
     archive << *this;
 }
 
-Index Index::load(fs::path path) 
+Index Index::load(const fs::path& path) 
 {
+    if (!fs::exists(path)) {
+        throw std::runtime_error("file not exists " + path.string());
+    }
+    
     std::ifstream fin {fs::absolute(path), std::ios::binary};
     if (fin.bad()){
         throw std::runtime_error("cannot read index from file " + path.string());

@@ -35,8 +35,8 @@ public:
     // query must be a set of words separated with spaces or a single word
     std::vector<SearchResult> find(const std::string& query) const;
 
-    void save(fs::path path) const;
-    static Index load(fs::path path);
+    void save(const fs::path& path) const;
+    static Index load(const fs::path& path);
 
     bool operator==(const Index& other) const noexcept;
 
