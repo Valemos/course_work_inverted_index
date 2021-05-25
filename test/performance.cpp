@@ -36,11 +36,10 @@ void measureAverageTime(std::function<void()> task, int repeat_number) {
 
 
 int main(int argc, const char** argv) {
-    boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::trace);
+    boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::debug);
 
     const int repeats_for_average = 10;
-    std::filesystem::path index_dir {"D:/coding/c_c++/concurrent_index_course_work/datasets/data/aclImdb/test/neg"};
-    // std::filesystem::path index_dir {user_input::promptExistingDirectory()};
+    std::filesystem::path index_dir {user_input::promptExistingDirectory()};
 
     auto single_threaded_task = [index_dir](){
         Index index;
@@ -51,16 +50,15 @@ int main(int argc, const char** argv) {
         }
     };
 
-    // std::cout << "single threaded task: " << std::endl; 
-    // measureAverageTime(single_threaded_task, repeats_for_average);
-    IndexBuilder* builder {nullptr};
-    for (auto threads_number : std::vector<int> {2, 4, 8}) {
-        std::cout << std::endl << threads_number << " threads:" << std::endl;
+    std::cout << "single threaded task: " << std::endl; 
+    measureAverageTime(single_threaded_task, repeats_for_average);
 
-        auto index_task = [&index_dir, threads_number, &builder](){
-            builder = new IndexBuilder(threads_number);
-            builder->indexDirectory(index_dir);
-            delete builder;
+    for (auto threads_number : std::vector<int> {1, 2, 4, 8, 16}) {
+        std::cout << std::endl << threads_number << " pool threads:" << std::endl;
+
+        auto index_task = [&index_dir, threads_number](){
+            IndexBuilder builder {threads_number};
+            builder.indexDirectory(index_dir);
         };
 
         measureAverageTime(index_task, repeats_for_average);
