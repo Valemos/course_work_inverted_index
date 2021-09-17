@@ -7,7 +7,6 @@
 
 namespace fs = std::filesystem;
 
-
 class IndexTempFilesTest : public ::testing::Test {
     friend class Index;
     
@@ -105,6 +104,22 @@ TEST_F(IndexTempFilesTest, IndexBuilder_MultithreadedEqualToSingleThreaded) {
     }
 
     EXPECT_TRUE(builder.getIndex() == single_threaded);
+};
+
+TEST_F(IndexTempFilesTest, IndexBuilder_resultIndexSortedByDocument) {
+    IndexBuilder builder(4);
+    builder.indexDirectory(temp_dir_);
+
+    for (auto& [token, positions] : builder.getIndex().getAllPositions()) {
+        auto it = positions.begin();
+        auto prev = it;
+        while (it != positions.end()){
+            EXPECT_TRUE(prev->document_id <= it->document_id);
+            
+            prev = it;
+            it++;
+        }
+    }
 };
 
 TEST(IndexExceptionsTest, FailToCreateFromNonExistingDirectory) {

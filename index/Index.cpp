@@ -3,14 +3,11 @@
 #include <boost/log/trivial.hpp>
 
 #include <iostream>
-#include <sstream>
 #include <utility>
-#include <fstream>
 #include <iterator>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/string.hpp>
 
@@ -48,8 +45,8 @@ void Index::mergeIndex(Index& other)
             // create new token
             token_positions_.emplace(other_token, other_positions);
         } else {
-            // merge two lists for existing token
-            token_search->second.splice(token_search->second.end(), other_positions);
+            token_search->second = mergeListsByDocument(std::move(token_search->second),
+                                                        std::move(other_positions));
         }
     }
 }
@@ -136,7 +133,7 @@ std::vector< std::pair<std::string, std::streamoff> > Index::getFileTokens(const
     }
 
     std::ifstream fin(path);
-    if (fin.bad()) {
+    if (!fin.is_open()) {
         throw std::runtime_error("cannot read file " + path.string());
     }
     
@@ -244,12 +241,62 @@ std::list<TokenPosition> Index::getIntersectionByDocument(const std::list<TokenP
             it2++;
         } else {
             result.emplace_back(*it1);
-            if (*it2 != *it1) { result.emplace_back(*it2); }
+            result.emplace_back(*it2);
             it1++;
             it2++;
         }
     }
     return result;
+}
+
+std::list<TokenPosition> Index::mergeListsByDocument(std::list<TokenPosition> first, std::list<TokenPosition> second)
+{
+    std::list<TokenPosition> result;
+
+    auto pickDocumentPositions = [&result] (auto& list, auto& iter) {
+        auto document_end = findDocumentEnd(list, iter);
+        result.splice(result.end(), list, iter, document_end);
+        iter = document_end;
+    };
+
+    auto it1 = first.begin(), it2 = second.begin();
+    while (it1 != first.end() && it2 != second.end()) {
+        if (it1->document_id < it2->document_id) { 
+            // first list contains desired document
+            pickDocumentPositions(first, it1);
+        } else if (it1->document_id > it2->document_id) { 
+            // second list contains desired document
+            pickDocumentPositions(second, it2);
+        } else { 
+            // both lists contain elements from the same file
+            pickDocumentPositions(first, it1);
+            pickDocumentPositions(second, it2);
+        }
+    }
+
+    if (it1 != first.end()) {
+        result.splice(result.end(), first, it1, first.end());
+    } else if (it2 != second.end()) {
+        result.splice(result.end(), second, it2, second.end());
+    }
+
+    return result;
+}
+
+std::list<TokenPosition>::iterator Index::findDocumentEnd(const std::list<TokenPosition> &list, const std::list<TokenPosition>::iterator& start)
+{
+    auto end = start;
+
+    // skip all elements from the same document
+    while (end != list.end()) {
+        if (end->document_id == start->document_id){
+            end++;
+        } else {
+            break;
+        }
+    }
+
+    return end; // return last element from the same document
 }
 
 std::vector<std::string> Index::tokenizeQuery(const std::string& query)

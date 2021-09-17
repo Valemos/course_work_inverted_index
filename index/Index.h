@@ -33,7 +33,7 @@ public:
     void mergeIndex(Index& other);
 
     // query must be a set of words separated with spaces or a single word
-    std::vector<SearchResult> find(const std::string& query) const;
+    [[nodiscard]] std::vector<SearchResult> find(const std::string& query) const;
 
     void save(const fs::path& path) const;
     static Index load(const fs::path& path);
@@ -59,6 +59,10 @@ private:
         const std::list<TokenPosition>& second
     );
 
+    // WARNING! invalidates both lists in process 
+    static std::list<TokenPosition> mergeListsByDocument(std::list<TokenPosition> first, std::list<TokenPosition> second);
+    static std::list<TokenPosition>::iterator findDocumentEnd(const std::list<TokenPosition> &list, const std::list<TokenPosition>::iterator& start);
+
     // read characters around position in indexed file 
     // with context_radius characters before and after first_letter
     std::string readTermContext(const TokenPosition& position, int context_radius) const;
@@ -66,7 +70,7 @@ private:
     std::vector<SearchResult> readPositionsContext(const std::list<TokenPosition>& positions) const;
 
     template<class Archive>
-    void serialize(Archive &ar, const unsigned int version);
+    void serialize(Archive &ar, unsigned int version);
 };
 
 

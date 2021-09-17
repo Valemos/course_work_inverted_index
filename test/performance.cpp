@@ -1,19 +1,17 @@
 
+#include <gtest/gtest.h>
 #include <iostream>
 #include <chrono>
 #include <functional>
-#include <filesystem>
 
-#include <boost/log/core.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/expressions.hpp>
+#include <filesystem>
 
 #include "index/Index.h"
 #include "index/IndexBuilder.h"
 #include "misc/user_input.h"
 
 
-void measureAverageTime(std::function<void()> task, int repeat_number) {
+void measureAverageTime(std::function<void()> &task, int repeat_number) {
     double total_time {0};
 
     for (int i = 0; i < repeat_number; i++) {
@@ -24,7 +22,7 @@ void measureAverageTime(std::function<void()> task, int repeat_number) {
 
             auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
             
-            total_time += time.count();
+            total_time += (double)time.count();
             std::cout << "\trun " << i + 1 << "> time: " << time.count() << "ms" << std::endl;   
         } catch (std::exception& err) {
             std::cout << "\trun " << i + 1 << "> error: "<< err.what() << std::endl;
@@ -35,13 +33,11 @@ void measureAverageTime(std::function<void()> task, int repeat_number) {
 }
 
 
-int main(int argc, const char** argv) {
-    boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::debug);
-
+TEST(TestPerformance, Display) {
     const int repeats_for_average = 10;
     std::filesystem::path index_dir {user_input::promptExistingDirectory()};
 
-    auto single_threaded_task = [index_dir](){
+    std::function<void()> single_threaded_task = [index_dir](){
         Index index;
         for (auto& entry : fs::recursive_directory_iterator(fs::absolute(index_dir))) {
             if (entry.is_regular_file()) {
@@ -56,7 +52,7 @@ int main(int argc, const char** argv) {
     for (auto threads_number : std::vector<int> {1, 2, 4, 8, 16}) {
         std::cout << std::endl << threads_number << " pool threads:" << std::endl;
 
-        auto index_task = [&index_dir, threads_number](){
+        std::function<void()> index_task = [&index_dir, threads_number](){
             IndexBuilder builder {threads_number};
             builder.indexDirectory(index_dir);
         };
@@ -65,6 +61,4 @@ int main(int argc, const char** argv) {
     }
 
     std::cin.get();
-
-    return 0;
 }
