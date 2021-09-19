@@ -1,5 +1,4 @@
-#ifndef __USER_INPUT_H__
-#define __USER_INPUT_H__
+#pragma once
 
 
 #include <boost/asio/ip/tcp.hpp>
@@ -76,5 +75,3 @@ char user_input::promptKeyboardButton() noexcept
     std::cin.get(result);
     return result;
 }
-
-#endif // __USER_INPUT_H__

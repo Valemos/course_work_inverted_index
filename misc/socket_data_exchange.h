@@ -1,6 +1,4 @@
-#ifndef __SOCKED_DATA_EXCHANGE_H__
-#define __SOCKED_DATA_EXCHANGE_H__
-
+#pragma once
 
 #include <string>
 
@@ -83,5 +81,3 @@ void socket_data_exchange::receiveSerialized(tcp::socket& socket, Serializeable&
     boost::archive::binary_iarchive archive(buf, boost_archive_flags);
     archive >> results;
 }
-
-#endif // __SOCKED_DATA_EXCHANGE_H__

@@ -1,5 +1,4 @@
-#ifndef __SOCKETCONNECTION_H__
-#define __SOCKETCONNECTION_H__
+#pragma once
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/io_service.hpp>
@@ -31,5 +30,3 @@ private:
 
     void handleConnection(const boost::system::error_code & err, tcp::socket sock);
 };
-
-#endif // __SOCKETCONNECTION_H__

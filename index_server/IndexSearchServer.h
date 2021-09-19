@@ -1,5 +1,4 @@
-#ifndef __INDEXSEARCHSERVER_H__
-#define __INDEXSEARCHSERVER_H__
+#pragma once
 
 #include <filesystem>
 
@@ -25,5 +24,3 @@ private:
 
     void handleClientQuerу(tcp::socket sock);
 };
-
-#endif // __INDEXSEARCHSERVER_H__

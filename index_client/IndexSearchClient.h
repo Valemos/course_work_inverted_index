@@ -1,5 +1,4 @@
-#ifndef __INDEXSEARCHCLIENT_H__
-#define __INDEXSEARCHCLIENT_H__
+#pragma once
 
 #include <string>
 
@@ -25,5 +24,3 @@ private:
     boost::asio::ip::tcp::socket server_socket_;
 
 };
-
-#endif // __INDEXSEARCHCLIENT_H__
