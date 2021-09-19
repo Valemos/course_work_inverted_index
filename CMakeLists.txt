@@ -10,16 +10,21 @@ find_package(Threads REQUIRED)
 
 add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
 add_definitions(${Boost_LIB_DIAGNOSTIC_DEFINITIONS})
-set(Boost_USE_STATIC_LIBS ON)
 
-find_package(Boost COMPONENTS thread serialization log log_setup REQUIRED)
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost 1.77 COMPONENTS thread serialization REQUIRED)
+message("found boost ${Boost_VERSION} components ${Boost_LIBRARIES}")
+set(BOOST_FULL_PATH_LIBRARIES /usr/lib/libboost_log-mt.a /usr/lib/libboost_log_setup-mt.a /usr/lib/libboost_thread-mt.a)
 
 
 include_directories(${PROJECT_SOURCE_DIR})
-add_library(index_lib index/Index.cpp index/IndexBuilder.cpp)
-target_link_libraries(index_lib Boost::log Boost::log_setup)
 
-set(PROJECT_LIBRARIES index_lib Threads::Threads ${Boost_LIBRARIES})
+add_library(index_lib index/Index.cpp index/IndexBuilder.cpp)
+target_link_libraries(index_lib ${BOOST_LOG_LIBRARIES})
+
+add_library(encrypted_session session/EncryptedSession.cpp session/EncryptedSession.h)
+
+set(PROJECT_LIBRARIES index_lib Threads::Threads ${BOOST_LOG_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(client index_client/main.cpp index_client/IndexSearchClient.cpp)
 target_include_directories(client PRIVATE index_client)
