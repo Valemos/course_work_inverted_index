@@ -11,12 +11,11 @@ using boost::asio::io_service;
 class SocketListener
 {
 public:
-    SocketListener(unsigned short port);
+    explicit SocketListener(unsigned short port);
 
-    void setConnectionHandler(std::function<void(tcp::socket)> handler);
-    void start();
-    void stop();
-    void acceptNext();
+    void SetConnectionHandler(std::function<void(tcp::socket)> handler);
+    void Start();
+    void AcceptNext();
 
 private:
     std::function<void(tcp::socket)> new_connection_handler_;
@@ -28,5 +27,5 @@ private:
     tcp::endpoint listen_endpoint_;
     tcp::acceptor acceptor_;
 
-    void handleConnection(const boost::system::error_code & err, tcp::socket sock);
+    void HandleConnection(const boost::system::error_code & err, tcp::socket sock);
 };

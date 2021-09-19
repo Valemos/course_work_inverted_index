@@ -5,6 +5,7 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/address.hpp>
+#include <session/ClientSession.h>
 
 #include "index/SearchResult.h"
 
@@ -23,4 +24,5 @@ private:
     boost::asio::io_service service_;
     boost::asio::ip::tcp::socket server_socket_;
 
+    ClientSession *session_ {nullptr};
 };

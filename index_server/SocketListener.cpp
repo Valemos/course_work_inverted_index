@@ -3,6 +3,7 @@
 #include <boost/log/trivial.hpp>
 #include <functional>
 #include <thread>
+#include <utility>
 
 
 SocketListener::SocketListener(unsigned short port) :
@@ -15,37 +16,32 @@ SocketListener::SocketListener(unsigned short port) :
     };
 }
 
-void SocketListener::setConnectionHandler(std::function<void(tcp::socket)> handler) 
+void SocketListener::SetConnectionHandler(std::function<void(tcp::socket)> handler)
 {
-    new_connection_handler_ = handler;
+    new_connection_handler_ = std::move(handler);
 }
 
-void SocketListener::start() 
+void SocketListener::Start()
 {
-    acceptNext();
+    AcceptNext();
     service_.run();
 }
 
-void SocketListener::stop() 
-{
-    service_.stop();
-}
-
-void SocketListener::acceptNext() 
+void SocketListener::AcceptNext()
 {
     acceptor_.async_accept(listen_endpoint_, connection_acceptor_);
 }
 
-void SocketListener::handleConnection(const boost::system::error_code & err, tcp::socket sock) {
+void SocketListener::HandleConnection(const boost::system::error_code & err, tcp::socket sock) {
     if (err) {
         BOOST_LOG_TRIVIAL(error) << "Error occured: " << err.message() << std::endl;
         sock.close();
-        acceptNext();
+        AcceptNext();
         return;
     }
 
     std::thread client_thread(new_connection_handler_, std::move(sock));
     client_thread.detach();
 
-    acceptNext();
+    AcceptNext();
 }

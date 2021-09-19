@@ -9,8 +9,8 @@ int main(int, char**) {
     boost::log::core::get()->set_filter (boost::log::trivial::severity >= boost::log::trivial::debug);
 
     try{
-        IndexSearchServer server { "./data.index", 40000 };
-        server.start();
+        IndexSearchServer server { "../data.index", 40000 };
+        server.Start();
 
     } catch (std::exception& err) {
         BOOST_LOG_TRIVIAL(fatal) << err.what() << std::endl;

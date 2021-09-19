@@ -9,6 +9,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/list.hpp>
+#include <boost/serialization/map.hpp>
 #include <boost/serialization/string.hpp>
 
 
@@ -82,16 +83,12 @@ std::vector<SearchResult> Index::find(const std::string& query) const
 
 void Index::save(const fs::path& path) const
 {
-    if (!fs::exists(path)) {
-        throw std::runtime_error("file not exists " + path.string());
-    }
-
-    std::ofstream fout {fs::absolute(path), std::ios::binary};
-    if (fout.bad()){
+    std::ofstream file_out {fs::absolute(path), std::ios::binary};
+    if (file_out.bad()){
         throw std::runtime_error("cannot save index to file " + path.string());
     }
 
-    boost::archive::binary_oarchive archive {fout};
+    boost::archive::binary_oarchive archive {file_out};
     archive << *this;
 }
 

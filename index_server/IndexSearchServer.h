@@ -2,10 +2,10 @@
 
 #include <filesystem>
 
+#include <boost/asio/ip/tcp.hpp>
 #include "index/Index.h"
 #include "SocketListener.h"
-
-#include <boost/asio/ip/tcp.hpp>
+#include "session/ServerSession.h"
 
 
 using boost::asio::ip::tcp;
@@ -15,12 +15,12 @@ class IndexSearchServer {
 
 public:
     IndexSearchServer(std::filesystem::path index_path, unsigned short port);
-    
-    void start();
+
+    void Start();
 
 private:
     Index index_;
     SocketListener listener_;
 
-    void handleClientQuerу(tcp::socket sock);
+    void HandleClientQuery(tcp::socket sock);
 };

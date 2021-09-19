@@ -29,7 +29,17 @@ namespace socket_data_exchange {
     
     // receive_size is in bytes and should be a multiple of inner struct elements
     template<typename Serializeable>
-    void receiveSerialized(tcp::socket& socket, Serializeable& results);
+    Serializeable receiveSerialized(tcp::socket &socket);
+
+    template<typename Serializeable>
+    boost::asio::const_buffer serialize(const Serializeable &data);
+
+    template<typename Serializeable>
+    Serializeable deserialize(boost::asio::const_buffer &data);
+
+    void sendWithSize(tcp::socket &socket, boost::asio::streambuf &buf);
+
+    boost::asio::const_buffer receiveWithSize(tcp::socket &socket);
 }
 
 
@@ -43,20 +53,14 @@ void socket_data_exchange::sendString(tcp::socket& socket, const std::string& me
 std::string socket_data_exchange::receiveString(tcp::socket& socket) 
 {
     boost::asio::streambuf buf;
-    size_t read_size = boost::asio::read_until(socket, buf, "\n");
+    auto read_size = boost::asio::read_until(socket, buf, "\n");
     std::string result = boost::asio::buffer_cast<const char*>(buf.data());
     return result.substr(0, result.size() - 1);
 }
 
-
-template<typename Serializeable>
-void socket_data_exchange::sendSerialized(tcp::socket& socket, const Serializeable& data) 
-{
-    boost::asio::streambuf buf;
-    boost::archive::binary_oarchive archive(buf, boost_archive_flags);
-    archive << data;
-
-    // send resulting size of serialized data
+void socket_data_exchange::sendWithSize(tcp::socket &socket,
+                                        boost::asio::streambuf &buf) {
+    // send resulting size of serialized data first
     auto size = buf.size();
     socket.send(boost::asio::buffer(&size, sizeof(size_t)));
 
@@ -65,11 +69,23 @@ void socket_data_exchange::sendSerialized(tcp::socket& socket, const Serializeab
     buf.consume(bytes_sent);  // will not work without .consume
 }
 
+template<typename Serializeable>
+boost::asio::const_buffer socket_data_exchange::serialize(const Serializeable &data) {
+    boost::asio::streambuf buf;
+    boost::archive::binary_oarchive archive(buf, boost_archive_flags);
+    archive << data;
+    return buf.data();
+}
 
 template<typename Serializeable>
-void socket_data_exchange::receiveSerialized(tcp::socket& socket, Serializeable& results) 
+Serializeable socket_data_exchange::receiveSerialized(tcp::socket& socket)
 {
-    // get archive size
+    boost::asio::const_buffer buf = receiveWithSize(socket);
+
+    return deserialize<Serializeable>(buf);
+}
+
+boost::asio::const_buffer socket_data_exchange::receiveWithSize(tcp::socket &socket) {// get archive size
     size_t data_size;
     socket.receive(boost::asio::buffer(&data_size, sizeof(size_t)));
 
@@ -77,7 +93,16 @@ void socket_data_exchange::receiveSerialized(tcp::socket& socket, Serializeable&
     boost::asio::streambuf buf;
     auto bytes_recv = socket.receive(buf.prepare(data_size));
     buf.commit(bytes_recv);
+    return buf.data();
+}
 
+template<typename Serializeable>
+Serializeable socket_data_exchange::deserialize(boost::asio::const_buffer &data) {
+    boost::asio::streambuf buf;
+    buf.sputn(static_cast<const char *>(data.data()), (std::streamsize)data.size());
     boost::archive::binary_iarchive archive(buf, boost_archive_flags);
+
+    Serializeable results;
     archive >> results;
+    return results;
 }

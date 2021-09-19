@@ -15,8 +15,7 @@ std::vector<SearchResult> IndexSearchClient::searchIndex(std::string query)
     socket_data_exchange::sendString(server_socket_, query);
     BOOST_LOG_TRIVIAL(debug) << "query sent";
     
-    std::vector<SearchResult> results;
-    socket_data_exchange::receiveSerialized(server_socket_, results);
+    std::vector<SearchResult> results = socket_data_exchange::receiveSerialized(server_socket_);
     BOOST_LOG_TRIVIAL(debug) << "results received";
 
     return results;
