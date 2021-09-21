@@ -11,15 +11,14 @@ ServerSession::~ServerSession() {
     socket_.close();
 }
 
+void ServerSession::StartCommunication() {
+
+}
+
 std::string ServerSession::ReceiveString() {
     return std::string();
 }
 
-void ServerSession::Authenticate() {
-
-}
-
-void ServerSession::Send(std::vector<char> data) {
-    std::vector<char> encrypted = message_encryption.Encrypt(std::move(data));
-
+void ServerSession::Send(const char *data, size_t size) {
+    std::vector<char> encrypted = message_encryption.Encrypt(data);
 }

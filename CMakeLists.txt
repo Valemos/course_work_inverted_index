@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/src)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -23,25 +23,27 @@ if (OPENSSL_FOUND)
     message("OpenSSL " ${OPENSSL_VERSION} " found")
 endif()
 
-add_library(index_lib index/Index.cpp index/IndexBuilder.cpp)
-target_link_libraries(index_lib ${BOOST_LOG_LIBRARIES})
 
-add_library(encrypted_session session/ClientSession.cpp session/ClientSession.h session/ServerSession.cpp session/ServerSession.h session/AESEncryption.cpp session/AESEncryption.h)
-target_link_libraries(encrypted_session OpenSSL::Crypto)
+set(PROJECT_BOOST_LIBRARIES Threads::Threads ${BOOST_FULL_PATH_LIBRARIES} ${Boost_LIBRARIES})
 
-set(PROJECT_LIBRARIES index_lib Threads::Threads ${BOOST_LOG_LIBRARIES} ${Boost_LIBRARIES})
+add_library(index_lib src/index/Index.cpp src/index/IndexBuilder.cpp)
+target_link_libraries(index_lib ${PROJECT_BOOST_LIBRARIES})
 
-add_executable(client index_client/main.cpp index_client/IndexSearchClient.cpp)
-target_include_directories(client PRIVATE index_client)
-target_link_libraries(client ${PROJECT_LIBRARIES})
+add_library(encrypted_session src/session/ClientSession.cpp src/session/ClientSession.h src/session/ServerSession.cpp src/session/ServerSession.h src/session/AESEncryption.cpp src/session/AESEncryption.h)
+target_link_libraries(encrypted_session OpenSSL::Crypto ${PROJECT_BOOST_LIBRARIES})
 
 
-add_executable(server index_server/main.cpp index_server/SocketListener.cpp index_server/IndexSearchServer.cpp)
-target_include_directories(server PRIVATE index_server)
-target_link_libraries(server ${PROJECT_LIBRARIES})
+add_executable(client src/index_client/main.cpp src/index_client/IndexSearchClient.cpp)
+target_include_directories(client PRIVATE src/index_client)
+target_link_libraries(client index_lib encrypted_session ${PROJECT_BOOST_LIBRARIES})
 
-add_executable(create_index index/create_index.cpp)
-target_link_libraries(create_index ${PROJECT_LIBRARIES})
+
+add_executable(server src/index_server/main.cpp src/index_server/SocketListener.cpp src/index_server/IndexSearchServer.cpp)
+target_include_directories(server PRIVATE src/index_server)
+target_link_libraries(server index_lib encrypted_session ${PROJECT_BOOST_LIBRARIES})
+
+add_executable(create_index src/index/create_index.cpp)
+target_link_libraries(create_index index_lib ${PROJECT_BOOST_LIBRARIES})
 
 add_custom_target(client_server)
 add_dependencies(client_server client server)
@@ -49,8 +51,8 @@ add_dependencies(client_server client server)
 
 # testing
 include(GoogleTest)
-add_executable(tests test/test_index.cpp test/performance.cpp)
-target_link_libraries(tests gtest_main index_lib)
+add_executable(tests test/test_index.cpp test/performance.cpp test/test_session.cpp src/index_server/SocketListener.cpp)
+target_link_libraries(tests gtest_main index_lib encrypted_session)
 gtest_discover_tests(tests)
 
 

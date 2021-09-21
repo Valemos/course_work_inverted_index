@@ -2,20 +2,23 @@
 
 #include <iostream>
 #include <boost/log/trivial.hpp>
-#include "misc/socket_data_exchange.h"
+#include "session/socket_data_exchange.h"
 
 
+// order of initialization matters
 IndexSearchClient::IndexSearchClient() :
-    service_(), server_socket_(service_)
+    service_(), server_socket_(service_), session_(std::move(server_socket_))
 {
 }
 
 std::vector<SearchResult> IndexSearchClient::searchIndex(std::string query) 
 {
-    socket_data_exchange::sendString(server_socket_, query);
+    session_.StartCommunication();
+    session_.SendString(query);
     BOOST_LOG_TRIVIAL(debug) << "query sent";
     
-    std::vector<SearchResult> results = socket_data_exchange::receiveSerialized(server_socket_);
+    auto data = session_.ReceiveData();
+    auto results = socket_data_exchange::deserialize<std::vector<SearchResult>>(data);
     BOOST_LOG_TRIVIAL(debug) << "results received";
 
     return results;
@@ -35,7 +38,7 @@ void IndexSearchClient::printResults(const std::vector<SearchResult>& results)
     }
 }
 
-void IndexSearchClient::connect(boost::asio::ip::address address, unsigned short port)
+void IndexSearchClient::Connect(const boost::asio::ip::address& address, unsigned short port)
 {
     BOOST_LOG_TRIVIAL(debug) << "trying to connect" << std::endl;
     tcp::endpoint server_ep {address, port};

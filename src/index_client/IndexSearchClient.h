@@ -15,7 +15,7 @@ class IndexSearchClient {
 public:
     IndexSearchClient();
 
-    void connect(boost::asio::ip::address address, unsigned short port);
+    void Connect(const boost::asio::ip::address& address, unsigned short port);
     void disconnect();
     std::vector<SearchResult> searchIndex(std::string query);
     static void printResults(const std::vector<SearchResult>& results);
@@ -23,6 +23,5 @@ public:
 private:
     boost::asio::io_service service_;
     boost::asio::ip::tcp::socket server_socket_;
-
-    ClientSession *session_ {nullptr};
+    ClientSession session_;
 };

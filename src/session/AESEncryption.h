@@ -11,8 +11,8 @@ public:
     AESEncryption();
     explicit AESEncryption(std::array<char, 16> key);
 
-    const std::vector<char> & Encrypt(std::vector<char> data);
-    const std::vector<char> & Decrypt(std::vector<char> data);
+    std::vector<char> Encrypt(const std::vector<char> &data);
+    std::vector<char> Decrypt(const std::vector<char> &data);
 
 private:
     std::array<char, 16> private_key_;

@@ -12,7 +12,7 @@ SocketListener::SocketListener(unsigned short port) :
 {
     connection_acceptor_ = [this](const auto& errcode, auto sock) 
     {
-        this->handleConnection(errcode, std::move(sock));
+        this->HandleConnection(errcode, std::move(sock));
     };
 }
 

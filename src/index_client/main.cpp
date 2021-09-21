@@ -19,7 +19,7 @@ int main(int, char**) {
                 std::cout << "enter query: " << std::endl;
                 auto query = user_input::promptOnce();
 
-                client.connect(address, 40000);
+                client.Connect(address, 40000);
                 auto results = client.searchIndex(query);
                 IndexSearchClient::printResults(results);
                 client.disconnect();

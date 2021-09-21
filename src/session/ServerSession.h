@@ -5,20 +5,20 @@
 #include <boost/asio/ip/tcp.hpp>
 #include "AESEncryption.h"
 
+using boost::asio::ip::tcp;
+
 class ServerSession {
 public:
-    explicit ServerSession(boost::asio::ip::tcp::socket socket);
+    explicit ServerSession(tcp::socket socket);
     ~ServerSession();
 
     std::string ReceiveString();
 
-    void Authenticate();
+    void StartCommunication();
 
-    void Send(std::vector<char> data);
+    void Send(const char *data, size_t size);
 
 private:
-    boost::asio::ip::tcp::socket socket_;
-
-    std::array<char, 16> client_public_key;
+    tcp::socket socket_;
     AESEncryption message_encryption;
 };
