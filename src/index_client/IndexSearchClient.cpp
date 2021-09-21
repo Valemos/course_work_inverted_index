@@ -3,6 +3,7 @@
 #include <iostream>
 #include <boost/log/trivial.hpp>
 #include "session/socket_data_exchange.h"
+#include "EncryptedSocketConnection.h"
 
 
 // order of initialization matters

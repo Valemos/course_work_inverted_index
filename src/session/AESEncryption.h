@@ -5,17 +5,21 @@
 #include <vector>
 
 class AESEncryption {
+
 public:
+    typedef std::array<char, 16> Key128Type;
     static void InitializeLibrary();
 
-    AESEncryption();
-    explicit AESEncryption(std::array<char, 16> key);
+    AESEncryption() = default;
+    explicit AESEncryption(Key128Type key);
+
+    void SetPrivateKey(AESEncryption::Key128Type key);
 
     std::vector<char> Encrypt(const std::vector<char> &data);
     std::vector<char> Decrypt(const std::vector<char> &data);
 
 private:
-    std::array<char, 16> private_key_;
+    Key128Type private_key_{};
 };
 
 

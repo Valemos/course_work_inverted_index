@@ -29,7 +29,7 @@ set(PROJECT_BOOST_LIBRARIES Threads::Threads ${BOOST_FULL_PATH_LIBRARIES} ${Boos
 add_library(index_lib src/index/Index.cpp src/index/IndexBuilder.cpp)
 target_link_libraries(index_lib ${PROJECT_BOOST_LIBRARIES})
 
-add_library(encrypted_session src/session/ClientSession.cpp src/session/ClientSession.h src/session/ServerSession.cpp src/session/ServerSession.h src/session/AESEncryption.cpp src/session/AESEncryption.h)
+add_library(encrypted_session src/session/ClientSession.cpp src/session/ClientSession.h src/session/ServerSession.cpp src/session/ServerSession.h src/session/AESEncryption.cpp src/session/AESEncryption.h src/session/EncryptedSocketConnection.cpp)
 target_link_libraries(encrypted_session OpenSSL::Crypto ${PROJECT_BOOST_LIBRARIES})
 
 

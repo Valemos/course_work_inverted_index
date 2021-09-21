@@ -11,16 +11,17 @@
 IndexSearchServer::IndexSearchServer(const std::filesystem::path& index_path, unsigned short port) :
     index_(Index::load(index_path)), listener_(port)
 {
-    listener_.SetConnectionHandler(OpenSessionFromSocket);
+    listener_.SetConnectionHandler([this](auto sock) { this->OpenSessionFromSocket(std::move(sock)); });
 }
 
 void IndexSearchServer::OpenSessionFromSocket(tcp::socket sock) {
     BOOST_LOG_TRIVIAL(info) << sock.remote_endpoint().address().to_string()
                     << ':'
                     << sock.remote_endpoint().port()
-                    << " connected";
+                    << " connection requested";
 
     ServerSession session{std::move(sock)};
+    session.StartCommunication();
     HandleClientSession(session);
 }
 
@@ -38,7 +39,7 @@ void IndexSearchServer::HandleClientSession(ServerSession &session) {
         BOOST_LOG_TRIVIAL(debug) << "results size: " << results.size();
 
         auto serialized = socket_data_exchange::serialize(results);
-        session.Send(serialized);
+        session.SendData(serialized);
         BOOST_LOG_TRIVIAL(debug) << "results sent";
 
     } catch (std::exception& err) {
