@@ -38,7 +38,7 @@ void IndexBuilder::indexDirectory(fs::path directory)
             BOOST_LOG_TRIVIAL(trace) << "posted for file " << entry.path().stem() 
                                     << " id: " << file_id 
                                     << " index " << current_index;
-            boost::asio::post(builder_pool_, [&index, path, file_id]() { index.addFile(path, file_id); });
+            boost::asio::post(builder_pool_, [&index, path, file_id]() { index.AddFile(path, file_id); });
 
             file_id++;
             current_index = (current_index + 1) % partial_indices_.size();
@@ -51,7 +51,7 @@ void IndexBuilder::indexDirectory(fs::path directory)
 
     result_ = Index();
     for (auto& index : partial_indices_) {
-        result_.mergeIndex(index);
+        result_.MergeIndex(index);
     }
     BOOST_LOG_TRIVIAL(trace) << "indices merged";
 

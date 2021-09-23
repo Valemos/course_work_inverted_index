@@ -22,21 +22,21 @@ class Index {
 public:
     Index() = default;
 
-    size_t getTotalFiles() const noexcept;
-    const std::map<std::string, std::list<TokenPosition>>& getAllPositions() const noexcept;
+    size_t GetTotalFiles() const noexcept;
+    const std::map<std::string, std::list<TokenPosition>>& GetAllPositions() const noexcept;
     
     // to avoid document_id collisions, must use only one type of addFile function 
-    void addFile(const fs::path& path);
-    void addFile(const fs::path& path, int document_id);
+    void AddFile(const fs::path& path);
+    void AddFile(const fs::path& path, int document_id);
     
     // invalidates other index in process
-    void mergeIndex(Index& other);
+    void MergeIndex(Index& other);
 
     // query must be a set of words separated with spaces or a single word
-    [[nodiscard]] std::vector<SearchResult> find(const std::string& query) const;
+    [[nodiscard]] std::vector<SearchResult> Find(const std::string& query) const;
 
-    void save(const fs::path& path) const;
-    static Index load(const fs::path& path);
+    void Save(const fs::path& path) const;
+    static Index Load(const fs::path& path);
 
     bool operator==(const Index& other) const noexcept;
 
@@ -45,29 +45,29 @@ private:
     std::map<std::string, std::list<TokenPosition>> token_positions_;
 
     // preprocess query
-    static std::vector<std::string> tokenizeQuery(const std::string& query);
-    static std::string normalizeToken(const std::string& word);
-    std::vector< std::pair<std::string, std::streamoff> > getFileTokens(const fs::path& path) const;
+    static std::vector<std::string> TokenizeQuery(const std::string& query);
+    static std::string NormalizeToken(const std::string& word);
+    std::vector< std::pair<std::string, std::streamoff> > GetFileTokens(const fs::path& path) const;
 
     // add and get tokens with positions
-    void addToken(std::string word, TokenPosition position);
-    std::optional<std::reference_wrapper<const std::list<TokenPosition>>> getPositionsForToken(const std::string& token) const;
+    void AddToken(std::string word, TokenPosition position);
+    std::optional<std::reference_wrapper<const std::list<TokenPosition>>> GetPositionsForToken(const std::string& token) const;
     
     // get common values for two lists
-    static std::list<TokenPosition> getIntersectionByDocument(
+    static std::list<TokenPosition> GetIntersectionByDocument(
         const std::list<TokenPosition>& first,
         const std::list<TokenPosition>& second
     );
 
     // WARNING! invalidates both lists in process 
-    static std::list<TokenPosition> mergeListsByDocument(std::list<TokenPosition> first, std::list<TokenPosition> second);
-    static std::list<TokenPosition>::iterator findDocumentEnd(const std::list<TokenPosition> &list, const std::list<TokenPosition>::iterator& start);
+    static std::list<TokenPosition> MergeListsByDocument(std::list<TokenPosition> first, std::list<TokenPosition> second);
+    static std::list<TokenPosition>::iterator FindDocumentEnd(const std::list<TokenPosition> &list, const std::list<TokenPosition>::iterator& start);
 
     // read characters around position in indexed file 
     // with context_radius characters before and after first_letter
-    std::string readTermContext(const TokenPosition& position, int context_radius) const;
-    std::string readTermContext(const fs::path& file_path, std::streamoff first_letter, int context_radius) const;
-    std::vector<SearchResult> readPositionsContext(const std::list<TokenPosition>& positions) const;
+    std::string ReadTermContext(const TokenPosition& position, int context_radius) const;
+    static std::string ReadTermContext(const fs::path& file_path, std::streamoff word_start, int context_radius) ;
+    std::vector<SearchResult> ReadPositionsContext(const std::list<TokenPosition>& positions) const;
 
     template<class Archive>
     void serialize(Archive &ar, unsigned int version);

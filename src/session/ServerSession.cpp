@@ -10,12 +10,12 @@ void ServerSession::StartCommunication() {
 //    initialize symmetric message encryption
 
     std::string key {"0000111122223333"};
-    AESEncryption::Key128Type key_array;
+    AESEncryption::KeyType key_array;
     std::memcpy(key_array.data(), key.data(), key.size());
-    SetPrivateKey(key_array);
+    SetParameters(key_array);
 }
 
 std::string ServerSession::ReceiveString() {
     auto data = ReceiveData();
-    return {data.data(), data.size()};
+    return {reinterpret_cast<const char *>(data.data()), data.size()};
 }

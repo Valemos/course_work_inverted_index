@@ -15,8 +15,8 @@ int main(int, char**) {
     
     IndexBuilder builder((int) user_input::promptSize("threads number"));
     builder.indexDirectory(user_input::promptExistingDirectory());
-    
-    builder.getIndex().save("../data.index");
+
+    builder.getIndex().Save("../data.index");
 
     return 0;
 }

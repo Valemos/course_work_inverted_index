@@ -7,13 +7,12 @@ ClientSession::ClientSession(tcp::socket socket) : EncryptedSocketConnection(std
 
 void ClientSession::StartCommunication() {
     std::string key {"0000111122223333"};
-    AESEncryption::Key128Type key_array;
+    AESEncryption::KeyType key_array;
     std::memcpy(key_array.data(), key.data(), key.size());
-    SetPrivateKey(key_array);
+    SetParameters(key_array);
 }
 
 void ClientSession::SendString(const std::string& string) {
-    std::vector<char> data(string.begin(), string.end());
+    std::vector<unsigned char> data(string.begin(), string.end());
     SendData(data);
 }
-

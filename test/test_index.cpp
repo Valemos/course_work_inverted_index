@@ -39,7 +39,7 @@ protected:
         writeToTemp("1234567890 24564564\n433443", temp_files_[4]);
 
         for (auto& file : temp_files_) {
-            index_.addFile(file);
+            index_.AddFile(file);
         }
     }
 
@@ -50,26 +50,26 @@ protected:
 
 
 TEST_F(IndexTempFilesTest, FailToFindNonExistingWord) {
-    auto results = index_.find("nonexisting");
+    auto results = index_.Find("nonexisting");
     EXPECT_TRUE(results.empty());
 }
 
 TEST_F(IndexTempFilesTest, FindSingleWord_FirstPosition){
-    auto search_results = index_.find("test");
+    auto search_results = index_.Find("test");
     
     ASSERT_FALSE(search_results.empty());
     EXPECT_EQ(search_results.begin()->position.start, (std::streamoff)5);
 };
 
 TEST_F(IndexTempFilesTest, FindAllWords){
-    auto search_results = index_.find("test");
+    auto search_results = index_.Find("test");
     
     ASSERT_FALSE(search_results.empty());
     EXPECT_EQ(search_results.size(), 3);
 };
 
 TEST_F(IndexTempFilesTest, FindTwoWordsInDocument){
-    auto search_results = index_.find("test other");
+    auto search_results = index_.Find("test other");
     
     ASSERT_FALSE(search_results.empty());
     EXPECT_EQ(search_results.size(), 2);
@@ -79,16 +79,16 @@ TEST_F(IndexTempFilesTest, FindTwoWordsInDocument){
 
 TEST_F(IndexTempFilesTest, TestAllWordsIncludedInIndex) {
     int tokens_count = 0;
-    for (auto& [token, positions] : index_.getAllPositions()){
+    for (auto& [token, positions] : index_.GetAllPositions()){
         tokens_count += (int) positions.size();
     }
     ASSERT_EQ(tokens_count, 11);
 };
 
 TEST_F(IndexTempFilesTest, TestIndexSerialization) {
-    index_.save(temp_dir_ / "index");
+    index_.Save(temp_dir_ / "index");
 
-    auto other_index = Index::load(temp_dir_ / "index");
+    auto other_index = Index::Load(temp_dir_ / "index");
 
     ASSERT_TRUE(fs::exists(temp_dir_ / "index"));
     EXPECT_TRUE(index_ == other_index);
@@ -100,7 +100,7 @@ TEST_F(IndexTempFilesTest, IndexBuilder_MultithreadedEqualToSingleThreaded) {
 
     Index single_threaded;
     for (auto& path : temp_files_) {
-        single_threaded.addFile(path);
+        single_threaded.AddFile(path);
     }
 
     EXPECT_TRUE(builder.getIndex() == single_threaded);
@@ -110,7 +110,7 @@ TEST_F(IndexTempFilesTest, IndexBuilder_resultIndexSortedByDocument) {
     IndexBuilder builder(4);
     builder.indexDirectory(temp_dir_);
 
-    for (auto& [token, positions] : builder.getIndex().getAllPositions()) {
+    for (auto& [token, positions] : builder.getIndex().GetAllPositions()) {
         auto it = positions.begin();
         auto prev = it;
         while (it != positions.end()){
@@ -130,6 +130,6 @@ TEST(IndexExceptionsTest, FailToCreateFromNonExistingDirectory) {
 TEST(IndexExceptionsTest, FailToAddNotExistingFile) {
     Index index;
 
-    EXPECT_THROW(index.addFile("nonexisting.txt"), std::runtime_error);
+    EXPECT_THROW(index.AddFile("nonexisting.txt"), std::runtime_error);
     EXPECT_TRUE(index == Index());
 };

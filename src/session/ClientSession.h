@@ -12,7 +12,6 @@ using boost::asio::ip::tcp;
 class ClientSession : public EncryptedSocketConnection {
 public:
     explicit ClientSession(tcp::socket socket);
-    ~ClientSession() = default;
 
     void StartCommunication();
     void SendString(const std::string& string);

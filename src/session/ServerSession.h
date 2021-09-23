@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <array>
 #include <boost/asio/ip/tcp.hpp>
 #include "AESEncryption.h"

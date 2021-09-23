@@ -32,7 +32,6 @@ void measureAverageTime(std::function<void()> &task, int repeat_number) {
     std::cout << "average time: " << total_time / repeat_number << "ms" << std::endl;
 }
 
-
 TEST(TestPerformance, Display) {
     const int repeats_for_average = 10;
     std::filesystem::path index_dir {user_input::promptExistingDirectory()};
@@ -41,7 +40,7 @@ TEST(TestPerformance, Display) {
         Index index;
         for (auto& entry : fs::recursive_directory_iterator(fs::absolute(index_dir))) {
             if (entry.is_regular_file()) {
-                index.addFile(entry.path());
+                index.AddFile(entry.path());
             }
         }
     };

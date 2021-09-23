@@ -13,16 +13,19 @@ public:
     explicit EncryptedSocketConnection(tcp::socket socket);
     ~EncryptedSocketConnection() = default;
 
-    void SendData(const std::vector<char> &data);
-    std::vector<char> ReceiveData();
+    void SendData(const std::vector<unsigned char> &data);
+    std::vector<unsigned char> ReceiveData();
 
 protected:
     tcp::socket socket_;
 
-    void SetPrivateKey(AESEncryption::Key128Type key);
+    void SetParameters(AESEncryption::KeyType key);
 
 private:
     AESEncryption message_encryption_;
+
+    void sendWithSize(const std::vector<unsigned char> &data);
+    std::vector<unsigned char> receiveWithSize();
 };
 
 
