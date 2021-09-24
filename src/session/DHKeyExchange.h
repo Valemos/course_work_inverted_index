@@ -3,10 +3,10 @@
 #include <openssl/evp.h>
 #include <vector>
 
-// high level wrapper for openssl Diffie-Hellman key exchange
+// high level wrapper for OpenSSL Diffie-Hellman key exchange
 class DHKeyExchange {
 public:
-    DHKeyExchange(size_t secret_length);
+    explicit DHKeyExchange(size_t secret_length);
     ~DHKeyExchange();
 
     void InitializeParameters();
@@ -30,10 +30,6 @@ private:
     EVP_PKEY *peer_public_key_{nullptr};
 
     std::vector<unsigned char> shared_secret_;
-
-    static std::vector<unsigned char> BytesFromPkey(EVP_PKEY *key);
-
-    static EVP_PKEY *PkeyFromBytes(std::vector<unsigned char> vector);
 };
 
 

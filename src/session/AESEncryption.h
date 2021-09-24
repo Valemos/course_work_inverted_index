@@ -3,7 +3,7 @@
 
 #include <array>
 #include <vector>
-#include <openssl/crypto.h>
+#include <openssl/evp.h>
 #include <openssl/aes.h>
 
 
@@ -21,7 +21,6 @@ public:
     ~AESEncryption();
 
     void SetPrivateKey(AESEncryption::KeyType key);
-
     std::vector<unsigned char> Encrypt(const std::vector<unsigned char> &data);
     std::vector<unsigned char> Decrypt(const std::vector<unsigned char> &data);
 
@@ -30,11 +29,8 @@ private:
     KeyType private_key_{};
 
     void HandleErrors();
-
     void EncryptInit(std::array<unsigned char, IV_SIZE> init_vector);
-
     std::array<unsigned char, TAG_SIZE> GetGCMTag();
-
     void DecryptInit(AESEncryption::KeyType key, AESEncryption::IVType init_vector);
 };
 

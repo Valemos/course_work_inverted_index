@@ -23,20 +23,15 @@ public:
     std::string ReceiveString();
     void SendString(const std::string& string);
 
-protected:
-    tcp::socket socket_;
-
 private:
+    tcp::socket socket_;
     AESEncryption message_encryption_;
 
+    void SetPrivateKey(std::vector<unsigned char> &key_bytes);
     void SendWithSize(const std::vector<unsigned char> &data);
     std::vector<unsigned char> ReceiveWithSize();
-
     void SendData(const std::vector<unsigned char> &data);
-
     std::vector<unsigned char> ReceiveData(size_t data_size);
-
-    void SetPrivateKey(std::vector<unsigned char> &key_bytes);
 };
 
 
