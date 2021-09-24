@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <session/AESEncryption.h>
+#include <session/DHKeyExchange.h>
 
 
 TEST(TestSession, TestEncryptionClassCorrect) {
@@ -27,4 +28,21 @@ TEST(TestSession, TestNonTrustworthyEncryption) {
     encrypted[encrypted.size() / 2] ^= 136;
 
     ASSERT_ANY_THROW(encryption.Decrypt(encrypted));
+}
+
+TEST(TestSession, TestKeyExchange){
+    DHKeyExchange key_1(AESEncryption::KEY_SIZE);
+    DHKeyExchange key_2(AESEncryption::KEY_SIZE);
+
+    key_1.InitializeParameters();
+    key_2.InitializeParameters();
+    key_1.GeneratePublicKey();
+    key_2.GeneratePublicKey();
+
+    key_2.SetPeerPublicKey(key_1.GetPublicKey());
+    key_1.SetPeerPublicKey(key_2.GetPublicKey());
+    key_1.DeriveSharedSecret();
+    key_2.DeriveSharedSecret();
+
+    ASSERT_EQ(key_1.GetSharedSecret(), key_2.GetSharedSecret());
 }

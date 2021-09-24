@@ -30,13 +30,12 @@ add_library(index_lib src/index/Index.cpp src/index/IndexBuilder.cpp)
 target_link_libraries(index_lib ${PROJECT_BOOST_LIBRARIES})
 
 add_library(encrypted_session
-        src/session/ClientSession.cpp
-        src/session/ClientSession.h
-        src/session/ServerSession.cpp
-        src/session/ServerSession.h
+        src/session/DHKeyExchange.cpp
+        src/session/DHKeyExchange.h
         src/session/AESEncryption.cpp
         src/session/AESEncryption.h
-        src/session/EncryptedSocketConnection.cpp
+        src/session/EncryptedSession.h
+        src/session/EncryptedSession.cpp
         src/session/Errors.cpp)
 target_link_libraries(encrypted_session OpenSSL::Crypto ${PROJECT_BOOST_LIBRARIES})
 

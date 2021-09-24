@@ -5,8 +5,8 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/address.hpp>
-#include <session/ClientSession.h>
 
+#include "session/EncryptedSession.h"
 #include "index/SearchResult.h"
 
 
@@ -23,5 +23,5 @@ public:
 
 private:
     boost::asio::io_service service_{};
-    ClientSession *session_{nullptr};
+    EncryptedSession *session_{nullptr};
 };

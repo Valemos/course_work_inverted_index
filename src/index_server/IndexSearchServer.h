@@ -4,8 +4,8 @@
 
 #include <boost/asio/ip/tcp.hpp>
 #include "index/Index.h"
+#include <session/EncryptedSession.h>
 #include "SocketListener.h"
-#include "session/ServerSession.h"
 
 
 using boost::asio::ip::tcp;
@@ -23,5 +23,5 @@ private:
     SocketListener listener_;
 
     void OpenSessionFromSocket(tcp::socket sock);
-    void HandleClientSession(ServerSession &session);
+    void HandleClientSession(EncryptedSession &session);
 };

@@ -12,6 +12,11 @@ public:
     explicit decryption_error(const std::string &arg);
 };
 
+class key_exchange_error : public std::runtime_error {
+public:
+    explicit key_exchange_error(const std::string &arg);
+};
+
 #include <array>
 #include <vector>
 #include <openssl/crypto.h>

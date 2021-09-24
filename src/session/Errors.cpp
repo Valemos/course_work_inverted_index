@@ -4,5 +4,6 @@
 
 #include "Errors.h"
 
-decryption_error::decryption_error(const std::string &arg) : runtime_error(arg) {
-}
+decryption_error::decryption_error(const std::string &arg) : runtime_error(arg) {}
+
+key_exchange_error::key_exchange_error(const std::string &arg) : runtime_error(arg) {}

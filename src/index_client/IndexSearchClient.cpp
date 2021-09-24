@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <boost/log/trivial.hpp>
-#include "session/socket_data_exchange.h"
+#include "session/index_serialization.h"
 
 
 void IndexSearchClient::Connect(const boost::asio::ip::address& address, unsigned short port)
@@ -12,7 +12,7 @@ void IndexSearchClient::Connect(const boost::asio::ip::address& address, unsigne
     tcp::socket new_connection_socket(service_);
     new_connection_socket.connect(server_ep);
 
-    session_ = new ClientSession(std::move(new_connection_socket));
+    session_ = new EncryptedSession(std::move(new_connection_socket));
     session_->StartCommunication();
     BOOST_LOG_TRIVIAL(debug) << "client connected" << std::endl;
 }
@@ -30,8 +30,8 @@ std::vector<SearchResult> IndexSearchClient::SearchIndex(const std::string& quer
     session_->SendString(query);
     BOOST_LOG_TRIVIAL(debug) << "query sent";
 
-    auto data = session_->ReceiveData();
-    auto results = index_data_exchange::deserialize<std::vector<SearchResult>>(data);
+    auto data = session_->ReceiveEncrypted();
+    auto results = index_serialization::deserialize<std::vector<SearchResult>>(data);
     BOOST_LOG_TRIVIAL(debug) << "results received";
 
     return results;

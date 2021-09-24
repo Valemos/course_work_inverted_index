@@ -1,11 +1,7 @@
 #include "IndexSearchServer.h"
 
 #include <boost/log/trivial.hpp>
-
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
-
-#include "session/socket_data_exchange.h"
+#include "session/index_serialization.h"
 
 
 IndexSearchServer::IndexSearchServer(const std::filesystem::path& index_path, unsigned short port) :
@@ -25,12 +21,12 @@ void IndexSearchServer::OpenSessionFromSocket(tcp::socket sock) {
                     << sock.remote_endpoint().port()
                     << " connection requested";
 
-    ServerSession session{std::move(sock)};
-    session.StartCommunication();
+    EncryptedSession session{std::move(sock)};
+    session.AcceptCommunication();
     HandleClientSession(session);
 }
 
-void IndexSearchServer::HandleClientSession(ServerSession &session) {
+void IndexSearchServer::HandleClientSession(EncryptedSession &session) {
     try {
         std::string query = session.ReceiveString();
         BOOST_LOG_TRIVIAL(debug) << "client query: \"" << query << '"';
@@ -38,8 +34,8 @@ void IndexSearchServer::HandleClientSession(ServerSession &session) {
         auto results = index_.Find(query);
         BOOST_LOG_TRIVIAL(debug) << "results size: " << results.size();
 
-        auto serialized = index_data_exchange::serialize(results);
-        session.SendData(serialized);
+        auto serialized = index_serialization::serialize(results);
+        session.SendEncrypted(serialized);
         BOOST_LOG_TRIVIAL(debug) << "results sent";
 
     } catch (std::exception& err) {

@@ -10,10 +10,11 @@
 class AESEncryption {
 
 public:
+    static constexpr int KEY_SIZE {32};
     static constexpr int IV_SIZE {AES_BLOCK_SIZE};
     static constexpr int TAG_SIZE {16};
 
-    typedef std::array<unsigned char, 32> KeyType; // 256 bit key
+    typedef std::array<unsigned char, KEY_SIZE> KeyType; // 256 bit key
     typedef std::array<unsigned char, IV_SIZE> IVType;
 
     AESEncryption();
