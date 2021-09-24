@@ -50,6 +50,7 @@ void EncryptedSession::StartCommunication() {
     SendData(public_key);
     exchange.SetPeerPublicKey(ReceiveData(public_key.size()));
 
+    exchange.DeriveSharedSecret();
     auto key_bytes = exchange.GetSharedSecret();
     SetPrivateKey(key_bytes);
 }
@@ -64,6 +65,7 @@ void EncryptedSession::AcceptCommunication() {
     exchange.SetPeerPublicKey(ReceiveData(public_key.size()));
     SendData(public_key);
 
+    exchange.DeriveSharedSecret();
     auto key_bytes = exchange.GetSharedSecret();
     SetPrivateKey(key_bytes);
 }
