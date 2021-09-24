@@ -21,6 +21,7 @@ void EncryptedSession::SendWithSize(const std::vector<unsigned char> &data) {
     auto size = data.size();
     socket_.send(boost::asio::buffer(&size, sizeof(size_t)));
     SendData(data);
+    // todo add data hashing to ensure integrity
 }
 
 void EncryptedSession::SendData(const std::vector<unsigned char> &data) {
@@ -28,6 +29,7 @@ void EncryptedSession::SendData(const std::vector<unsigned char> &data) {
 }
 
 std::vector<unsigned char> EncryptedSession::ReceiveWithSize() {
+    // todo add data hashing to ensure integrity
     size_t data_size;
     socket_.receive(boost::asio::buffer(&data_size, sizeof(size_t)));
 
@@ -41,6 +43,7 @@ std::vector<unsigned char> EncryptedSession::ReceiveData(size_t data_size) {
 }
 
 void EncryptedSession::StartCommunication() {
+//    todo change key exchange process
     DHKeyExchange exchange{AESEncryption::KEY_SIZE};
     exchange.InitializeParameters();
     exchange.GeneratePublicKey();
@@ -56,6 +59,7 @@ void EncryptedSession::StartCommunication() {
 }
 
 void EncryptedSession::AcceptCommunication() {
+//    todo change key exchange process
     DHKeyExchange exchange{AESEncryption::KEY_SIZE};
     exchange.InitializeParameters();
     exchange.GeneratePublicKey();
