@@ -15,7 +15,7 @@ DHKeyExchange::~DHKeyExchange() {
     EVP_PKEY_CTX_free(key_context_);
     EVP_PKEY_CTX_free(secret_context_);
 
-    EVP_PKEY_free(public_key_);
+    EVP_PKEY_free(key_);
     EVP_PKEY_free(parameters_);
     EVP_PKEY_free(peer_public_key_);
 }

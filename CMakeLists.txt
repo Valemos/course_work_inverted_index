@@ -36,7 +36,7 @@ add_library(encrypted_session
         src/session/AESEncryption.h
         src/session/EncryptedSession.h
         src/session/EncryptedSession.cpp
-        src/session/Errors.cpp src/session/SHA256Algorithm.cpp src/session/SHA256Algorithm.h src/session/RSAEncryption.cpp src/session/RSAEncryption.h)
+        src/session/Errors.cpp src/session/SHA256Algorithm.cpp src/session/SHA256Algorithm.h src/session/RSAKeyPair.cpp src/session/RSAKeyPair.h src/session/RSAKeyParameters.cpp src/session/RSAKeyParameters.h)
 target_link_libraries(encrypted_session OpenSSL::Crypto ${PROJECT_BOOST_LIBRARIES})
 
 

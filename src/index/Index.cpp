@@ -229,7 +229,6 @@ std::optional<std::reference_wrapper<const std::list<TokenPosition>>> Index::Get
 
 std::list<TokenPosition> Index::GetIntersectionByDocument(const std::list<TokenPosition>& first, const std::list<TokenPosition>& second)
 {
-    // todo: check for correct order of TokenPosition objects
     std::list<TokenPosition> result;
     auto it1 = first.begin(), it2 = second.begin();
     while (it1 != first.end() && it2 != second.end()) {
