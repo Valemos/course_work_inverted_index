@@ -9,14 +9,12 @@ public:
     SHA256Algorithm();
     virtual ~SHA256Algorithm();
 
-    // resets a context and hashes all bytes at once
     std::vector<unsigned char> HashBytes(const std::vector<unsigned char> &bytes);
 
-    // updates current digest
+    // used for continuous hashing
+    void Reset();
     void Update(const std::vector<unsigned char> &bytes);
-
-    // returns current hash and resets context
-    std::vector<unsigned char> GetFinalHash();
+    std::vector<unsigned char> GetFinalHash(); // returns current hash and resets context
 
 private:
     SHA256_CTX *hash_context_{nullptr};
@@ -24,6 +22,7 @@ private:
 
     void Init();
     void Finalize();
+
 };
 
 
