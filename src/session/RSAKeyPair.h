@@ -1,7 +1,11 @@
 #pragma once
 
-#include <openssl/evp.h>
 #include <vector>
+#include <optional>
+#include <functional>
+#include <string>
+#include <openssl/evp.h>
+
 
 class RSAKeyPair {
 public:
@@ -9,29 +13,33 @@ public:
     ~RSAKeyPair();
 
     void GenerateKeys();
-
-    // keys must be properly generated or else algorithm will not work
-    // they must be in PEM format to be read correctly
-    void SetPublicKey(const std::string &public_key);
-    void SetPrivateKey(const std::string &private_key);
-    std::vector<unsigned char> GetPublicKey() const;
-    std::vector<unsigned char> GetPrivateKey() const;
-
-    // methods for encryption
+    void SetPublicKey(const std::vector<unsigned char> &key);
+    void SetKeys(const std::vector<unsigned char> &public_key, const std::vector<unsigned char> &private_key);
     std::vector<unsigned char> Encrypt(const std::vector<unsigned char> &bytes);
     std::vector<unsigned char> Decrypt(const std::vector<unsigned char> &bytes);
 
-    // methods for signature with private key
-    std::vector<unsigned char> Sign(const std::vector<unsigned char> &bytes); // returns only signature
+    std::vector<unsigned char> Sign(const std::vector<unsigned char> &bytes);
     bool Verify(const std::vector<unsigned char> &bytes, const std::vector<unsigned char> &signature);
 
+    std::vector<unsigned char> GetPublicKey();
+    std::vector<unsigned char> GetPrivateKey();
+
 private:
-    //    todo rewrite RSA key management
-    RSA *keys_{nullptr};
+    EVP_PKEY *keys_;
 
-    static std::vector<unsigned char> KeyToBytes(EVP_PKEY *key) ;
-    static EVP_PKEY *BytesToKey(const std::vector<unsigned char> &bytes);
+    static OSSL_PARAM *GetKeyParameters(std::optional<std::reference_wrapper<const std::vector<unsigned char>>> public_key,
+                                        std::optional<std::reference_wrapper<const std::vector<unsigned char>>> private_key);
+
+    void SetKeyFromParameters(OSSL_PARAM *parameters);
+
+    static std::vector<unsigned char> GetNamedParam(EVP_PKEY *key, const std::string& name);
+
+    static std::vector<unsigned char> GetParameterData(OSSL_PARAM *param);
+
+    static std::vector<unsigned char> GetOctetStringData(OSSL_PARAM *param);
+
+    static std::vector<unsigned char> GetBignumData(OSSL_PARAM *param);
+
+    static void PushParamBuildBignum(OSSL_PARAM_BLD *param_bld, const char *key,
+                                     std::vector<unsigned char> &bytes);
 };
-
-
-

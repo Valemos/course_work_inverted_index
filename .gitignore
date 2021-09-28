@@ -2,3 +2,4 @@
 /build/
 **.index
 /.vscode/
+/cmake-build-debug/

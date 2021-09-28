@@ -73,12 +73,16 @@ TEST(TestRSA, TestRSAEncryption) {
 }
 
 TEST(TestRSA, TestSignature) {
-    RSAKeyPair encryption;
-    encryption.GenerateKeys();
+    RSAKeyPair key_pair;
+    key_pair.GenerateKeys();
 
     std::vector<unsigned char> data_to_sign {1, 2, 3, 4, 5};
-    auto signature = encryption.Sign(data_to_sign);
-    ASSERT_TRUE(encryption.Verify(data_to_sign, signature));
+    auto signature = key_pair.Sign(data_to_sign);
+
+    RSAKeyPair other_user;
+    other_user.SetPublicKey(key_pair.GetPublicKey());
+
+    ASSERT_TRUE(other_user.Verify(data_to_sign, signature));
 }
 
 TEST(TestRSA, TestSignatureFails) {
@@ -89,4 +93,14 @@ TEST(TestRSA, TestSignatureFails) {
     auto signature = encryption.Sign(data_to_sign);
     data_to_sign[2] = 100;
     ASSERT_FALSE(encryption.Verify(data_to_sign, signature));
+}
+
+
+TEST(TestRSA, TestSetAndGetPublicKey) {
+    RSAKeyPair first, second;
+    first.GenerateKeys();
+
+    second.SetPublicKey(first.GetPublicKey());
+
+    ASSERT_EQ(first.GetPublicKey(), second.GetPublicKey());
 }

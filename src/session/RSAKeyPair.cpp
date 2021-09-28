@@ -1,183 +1,235 @@
 #include "RSAKeyPair.h"
-#include "SHA256Algorithm.h"
 #include <stdexcept>
+#include <iostream>
 #include <openssl/rsa.h>
-#include <openssl/pem.h>
+#include <openssl/err.h>
+#include <openssl/params.h>
+#include <openssl/param_build.h>
+
+#define PRINT_ALL_ERRORS ERR_print_errors_cb([](auto buf, auto size, auto) {std::cout << std::string(buf, size) << std::endl; return 0;}, nullptr)
 
 
-RSAKeyPair::RSAKeyPair() {
+RSAKeyPair::RSAKeyPair() : keys_(nullptr){
 }
 
 RSAKeyPair::~RSAKeyPair() {
-    RSA_free(private_key_);
-    RSA_free(keys_);
+    EVP_PKEY_free(keys_);
 }
 
 void RSAKeyPair::GenerateKeys() {
-    EVP_PKEY_CTX *generator_context;
-    if(!(generator_context = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr))){
-        throw std::runtime_error("cannot initialize key generation generator_context");
-    }
+    EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
+    if (ctx == nullptr)
+        throw std::runtime_error("cannot init keygen");
 
-    if (EVP_PKEY_keygen_init(generator_context) <= 0)
-        throw std::runtime_error("cannot initialize RSA keygen");
+    if (EVP_PKEY_keygen_init(ctx) <= 0)
+        throw std::runtime_error("cannot init keygen");
 
-    if (EVP_PKEY_CTX_set_rsa_keygen_bits(generator_context, 2048) <= 0)
-        throw std::runtime_error("cannot set RSA bits");
+    if (EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, 2048) <= 0)
+        throw std::runtime_error("cannot init keygen");
 
-    BIGNUM *public_key_exponent = BN_new();
-    RSA *key_pair = RSA_new();
-    BN_set_word(public_key_exponent, RSA_F4);
-
-    RSA_generate_key_ex(key_pair, 2048, public_key_exponent, NULL);
-
-    keys_ =
-
-    EVP_PKEY_CTX_free(generator_context);
-}
-
-void RSAKeyPair::SetPublicKey(const std::string &public_key) {
-    RSA *rsa;
-    auto c_string = public_key.c_str();
-    BIO * keybio = BIO_new_mem_buf((void*)c_string, -1);
-    if (keybio == nullptr) {
-        throw std::runtime_error("cannot read key string");
-    }
-    RSA_free(keys_);
-    keys_ = PEM_read_bio_RSAPublicKey(keybio, &rsa, nullptr, nullptr);
-}
-
-void RSAKeyPair::SetPrivateKey(const std::string &private_key) {
-    RSA *rsa;
-    auto c_string = private_key.c_str();
-    BIO * keybio = BIO_new_mem_buf((void*)c_string, -1);
-    if (keybio == nullptr) {
-        throw std::runtime_error("cannot read key string");
-    }
-    RSA_free(private_key_);
-    private_key_ = PEM_read_bio_RSAPrivateKey(keybio, &rsa, nullptr, nullptr);
-}
-
-std::vector<unsigned char> RSAKeyPair::GetPublicKey() const {
-    i2d_RSAPublicKey(keys_, );
-}
-
-std::vector<unsigned char> RSAKeyPair::GetPrivateKey() const {
-    return KeyToBytes(keys_);
-}
-
-std::vector<unsigned char> RSAKeyPair::KeyToBytes(EVP_PKEY *key) {
-    std::vector<unsigned char> bytes;
-    bytes.resize(i2d_PublicKey(key, 0));
-    unsigned char *pp = bytes.data();
-    i2d_PublicKey(key, &pp);
-    return bytes;
-}
-
-EVP_PKEY *RSAKeyPair::BytesToKey(const std::vector<unsigned char> &bytes) {
-    EVP_PKEY *new_key;
-    const unsigned char *pp = bytes.data();
-    d2i_PublicKey(EVP_PKEY_RSA, &new_key, &pp, (long)bytes.size());
-    return nullptr;
+    EVP_PKEY_free(keys_);
+    if (1 != EVP_PKEY_generate(ctx, &keys_))
+        throw std::runtime_error("cannot generate keys");
 }
 
 std::vector<unsigned char> RSAKeyPair::Encrypt(const std::vector<unsigned char> &bytes) {
-    auto encrypt_context_ =;
-    if(1 != EVP_PKEY_encrypt_init(context_))
-        throw std::runtime_error("cannot initialize encryption");
+    auto ctx = EVP_PKEY_CTX_new(keys_, nullptr);
+    if (ctx == nullptr)
+        throw std::runtime_error("cannot init key context");
 
-    if (EVP_PKEY_encrypt_init(context_) <= 0)
-        throw std::runtime_error("cannot initialize encryption");
+    if (EVP_PKEY_encrypt_init(ctx) <= 0)
+        throw std::runtime_error("cannot init encryption");
 
-    if (EVP_PKEY_CTX_set_rsa_padding(context_, RSA_PKCS1_OAEP_PADDING) <= 0)
-        throw std::runtime_error("cannot initialize encryption");
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
+        throw std::runtime_error("cannot init encryption");
 
     size_t encrypted_len;
-    if (1 != EVP_PKEY_encrypt(context_, nullptr, &encrypted_len, bytes.data(), bytes.size()))
+    if (EVP_PKEY_encrypt(ctx, nullptr, &encrypted_len, bytes.data(), bytes.size()) <= 0)
         throw std::runtime_error("failed to encrypt");
 
     std::vector<unsigned char> encrypted;
-    encrypted.resize(encrypted_len);
+    encrypted.resize(encrypted_len, 0);
 
-
-    if (EVP_PKEY_encrypt(context_, encrypted.data(), &encrypted_len, bytes.data(), bytes.size()) <= 0)
+    if (EVP_PKEY_encrypt(ctx, encrypted.data(), &encrypted_len, bytes.data(), bytes.size()) <= 0)
         throw std::runtime_error("failed to encrypt");
-    encrypted.resize(encrypted_len);
+    encrypted.resize(encrypted_len, 0);
 
     return encrypted;
 }
 
 std::vector<unsigned char> RSAKeyPair::Decrypt(const std::vector<unsigned char> &bytes) {
-    if (EVP_PKEY_decrypt_init(context_) <= 0)
-        throw std::runtime_error("cannot initialize decryption");
+    auto ctx = EVP_PKEY_CTX_new(keys_, nullptr);
+    if (ctx == nullptr)
+        throw std::runtime_error("cannot init key context");
 
-    if (EVP_PKEY_CTX_set_rsa_padding(context_, RSA_PKCS1_OAEP_PADDING) <= 0)
-        throw std::runtime_error("cannot initialize decryption");
+    if (EVP_PKEY_decrypt_init(ctx) <= 0)
+        throw std::runtime_error("cannot init decryption");
+
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
+        throw std::runtime_error("cannot init decryption");
 
     size_t decrypted_len;
-    if (EVP_PKEY_decrypt(context_, nullptr, &decrypted_len, bytes.data(), bytes.size()) <= 0)
+    if (EVP_PKEY_decrypt(ctx, nullptr, &decrypted_len, bytes.data(), bytes.size()) <= 0)
         throw std::runtime_error("failed to decrypt");
 
     std::vector<unsigned char> decrypted;
-    decrypted.resize(decrypted_len);
+    decrypted.resize(decrypted_len, 0);
 
-    if (EVP_PKEY_decrypt(context_, decrypted.data(), &decrypted_len, bytes.data(), bytes.size()) <= 0)
+    if (EVP_PKEY_decrypt(ctx, decrypted.data(), &decrypted_len, bytes.data(), bytes.size()) <= 0)
         throw std::runtime_error("failed to decrypt");
-    decrypted.resize(decrypted_len);
+    decrypted.resize(decrypted_len, 0);
 
     return decrypted;
 }
 
 std::vector<unsigned char> RSAKeyPair::Sign(const std::vector<unsigned char> &bytes) {
+    auto md_ctx = EVP_MD_CTX_new();
+    auto key_ctx = EVP_PKEY_CTX_new(keys_, nullptr);
 
-    EVP_MD_CTX* rsa_sign_ctx = EVP_MD_CTX_create();
-    EVP_PKEY* priKey  = EVP_PKEY_new();
-    EVP_PKEY_assign_RSA(priKey, rsa);
-    if (EVP_DigestSignInit(rsa_sign_ctx, NULL, EVP_sha256(), NULL, priKey) <= 0) {
-        return false;
-    }
-    if (EVP_DigestSignUpdate(rsa_sign_ctx, Msg, MsgLen) <= 0) {
-        return false;
-    }
-    if (EVP_DigestSignFinal(rsa_sign_ctx, NULL, MsgLenEnc) <= 0) {
-        return false;
-    }
-    *EncMsg = (unsigned char*)malloc(*MsgLenEnc);
-    if (EVP_DigestSignFinal(rsa_sign_ctx, *EncMsg, MsgLenEnc) <= 0) {
-        return false;
-    }
-    EVP_MD_CTX_cleanup(rsa_sign_ctx);
-    return true;
+    if (EVP_DigestSignInit(md_ctx, &key_ctx, EVP_sha256(), nullptr, keys_) <= 0)
+        throw std::runtime_error("cannot init digest and sign context");
 
-    size_t signature_len;
-    if (EVP_PKEY_sign(signing_ctx, nullptr, &signature_len, message_digest.data(), message_digest.size()) <= 0)
-        throw std::runtime_error("failed to determine signature length");
+    if (EVP_DigestSignUpdate(md_ctx, bytes.data(), bytes.size()) <= 0)
+        throw std::runtime_error("cannot update signing digest");
+
+    size_t signature_size;
+    if (EVP_DigestSignFinal(md_ctx, nullptr, &signature_size) <= 0)
+        throw std::runtime_error("cannot get signature size");
 
     std::vector<unsigned char> signature;
-    signature.resize(signature_len);
+    signature.resize(signature_size);
 
-    if (EVP_PKEY_sign(signing_ctx, signature.data(), &signature_len, message_digest.data(), message_digest.size()) <= 0)
-        throw std::runtime_error("failed to sign message");
+    if (EVP_DigestSignFinal(md_ctx, signature.data(), &signature_size) <= 0)
+        throw std::runtime_error("cannot sign final digest");
+    signature.resize(signature_size);
 
-    EVP_PKEY_CTX_free(signing_ctx);
     return signature;
 }
 
-bool RSAKeyPair::Verify(const std::vector<unsigned char> &bytes, const std::vector<unsigned char> &signature) {
-    EVP_PKEY_CTX* verify_ctx;
-    if(!(verify_ctx = EVP_PKEY_CTX_new(keys_, nullptr)))
-        throw std::runtime_error("cannot initialize verify context");
+bool RSAKeyPair::Verify(const std::vector<unsigned char> &bytes,
+                        const std::vector<unsigned char> &signature) {
+    auto md_ctx = EVP_MD_CTX_new();
+    auto key_ctx = EVP_PKEY_CTX_new(keys_, nullptr);
 
-    if (EVP_PKEY_verify_init(verify_ctx) <= 0)
-        throw std::runtime_error("cannot initialize verify context");
+    if (EVP_DigestVerifyInit(md_ctx, &key_ctx, EVP_sha256(), nullptr, keys_) <= 0)
+        throw std::runtime_error("cannot init digest and verify context");
 
-    if (EVP_PKEY_CTX_set_rsa_padding(verify_ctx, RSA_PKCS1_PADDING) <= 0)
-        throw std::runtime_error("cannot initialize verify context");
+    if (EVP_DigestVerifyUpdate(md_ctx, bytes.data(), bytes.size()) <= 0)
+        throw std::runtime_error("cannot update signing digest");
 
-    // TODO check if signature works without digest
-    if (EVP_PKEY_CTX_set_signature_md(verify_ctx, EVP_sha256()) <= 0)
-        throw std::runtime_error("cannot initialize verify context");
+    return 1 == EVP_DigestVerifyFinal(md_ctx, signature.data(), signature.size());
+}
 
-    auto message_digest = SHA256Algorithm().HashBytes(bytes);
-    return 1 == EVP_PKEY_verify(verify_ctx, signature.data(), signature.size(), message_digest.data(), message_digest.size());
+void RSAKeyPair::SetPublicKey(const std::vector<unsigned char> &key) {
+    OSSL_PARAM *parameters = GetKeyParameters({key}, std::nullopt);
+    SetKeyFromParameters(parameters);
+    OSSL_PARAM_free(parameters);
+}
+
+void RSAKeyPair::SetKeyFromParameters(OSSL_PARAM *parameters) {
+    auto ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
+    if (EVP_PKEY_fromdata_init(ctx) <= 0)
+        throw std::runtime_error("cannot init create key");
+
+    EVP_PKEY_free(keys_);
+//    todo fix segfaults on key setting
+    if (EVP_PKEY_fromdata(ctx, &keys_, EVP_PKEY_KEYPAIR, parameters) <= 0)
+        throw std::runtime_error("cannot create key");
+}
+
+void RSAKeyPair::SetKeys(const std::vector<unsigned char> &public_key, const std::vector<unsigned char> &private_key) {
+    OSSL_PARAM *parameters = GetKeyParameters({public_key}, {private_key});
+    SetKeyFromParameters(parameters);
+    OSSL_PARAM_free(parameters);
+}
+
+OSSL_PARAM *RSAKeyPair::GetKeyParameters(std::optional<std::reference_wrapper<const std::vector<unsigned char>>> public_key,
+                                         std::optional<std::reference_wrapper<const std::vector<unsigned char>>> private_key) {
+    auto param_bld = OSSL_PARAM_BLD_new();
+
+    if (public_key.has_value()) {
+        auto public_data = public_key.value().get();
+        PushParamBuildBignum(param_bld, "n", public_data);
+    }
+
+    if (private_key.has_value()) {
+        auto private_data = private_key.value().get();
+        PushParamBuildBignum(param_bld, "d", private_data);
+    }
+
+    // default rsa exponent
+    OSSL_PARAM_BLD_push_long(param_bld, "e", RSA_F4);
+
+    auto parameters = OSSL_PARAM_BLD_to_param(param_bld);
+    OSSL_PARAM_BLD_free(param_bld);
+
+    return parameters;
+}
+
+void RSAKeyPair::PushParamBuildBignum(OSSL_PARAM_BLD *param_bld, const char *key, std::vector<unsigned char> &bytes) {
+    BIGNUM *bignum = BN_bin2bn(bytes.data(), (int)bytes.size(), nullptr);
+    OSSL_PARAM_BLD_push_BN(param_bld, key, bignum);
+}
+
+std::vector<unsigned char> RSAKeyPair::GetPublicKey() {
+    return GetNamedParam(keys_, "n");
+}
+
+std::vector<unsigned char> RSAKeyPair::GetPrivateKey() {
+    return GetNamedParam(keys_, "d");
+}
+
+std::vector<unsigned char> RSAKeyPair::GetNamedParam(EVP_PKEY *key, const std::string& name) {
+    OSSL_PARAM *param_array;
+    if (EVP_PKEY_todata(key, EVP_PKEY_PUBLIC_KEY, &param_array) == 0)
+        throw std::runtime_error("cannot read parameters");
+
+    OSSL_PARAM *cur_param;
+    int i = 0;
+    do {
+        cur_param = &param_array[i++];
+        if (std::string(cur_param->key) == name) {
+            auto data = GetParameterData(cur_param);
+            OSSL_PARAM_free(param_array);
+            return data;
+        }
+    } while (cur_param->key != nullptr);
+
+    throw std::runtime_error("cannot find parameter with name \"" + name + '"');
+}
+
+std::vector<unsigned char> RSAKeyPair::GetParameterData(OSSL_PARAM *param) {
+    if (OSSL_PARAM_OCTET_STRING == param->data_type) {
+        return GetOctetStringData(param);
+    } else if (OSSL_PARAM_UNSIGNED_INTEGER == param->data_type){
+        return GetBignumData(param);
+    }
+    throw std::runtime_error("parameter type deserialization was not implemented");
+}
+
+std::vector<unsigned char> RSAKeyPair::GetOctetStringData(OSSL_PARAM *param) {
+    size_t string_len;
+    if(OSSL_PARAM_get_octet_string_ptr(param, nullptr, &string_len) == 0)
+        throw std::runtime_error("cannot read string");
+
+    std::vector<unsigned char> bytes;
+    bytes.resize(string_len);
+    unsigned char *pointer = bytes.data();
+    if(OSSL_PARAM_get_octet_string(param, reinterpret_cast<void **>(&pointer), bytes.size(), &string_len) == 0)
+        throw std::runtime_error("cannot read string");
+
+    return bytes;
+}
+
+std::vector<unsigned char> RSAKeyPair::GetBignumData(OSSL_PARAM *param) {
+    BIGNUM *bignum{nullptr};
+    if(OSSL_PARAM_get_BN(param, &bignum) == 0)
+        throw std::runtime_error("cannot read bignum");
+
+    std::vector<unsigned char> bytes;
+    int new_size = BN_num_bytes(bignum);
+    bytes.resize(new_size);
+    BN_bn2bin(bignum, bytes.data());
+
+    return bytes;
 }

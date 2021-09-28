@@ -5,9 +5,6 @@
 #include <openssl/ec.h>
 
 DHKeyExchange::DHKeyExchange(size_t secret_length) : secret_length_(secret_length) {
-    if(!(parameters_context_ = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr)))
-        throw std::runtime_error("cannot initialize key generation context");
-
 }
 
 DHKeyExchange::~DHKeyExchange() {
@@ -15,15 +12,19 @@ DHKeyExchange::~DHKeyExchange() {
     EVP_PKEY_CTX_free(key_context_);
     EVP_PKEY_CTX_free(secret_context_);
 
-    EVP_PKEY_free(key_);
+    EVP_PKEY_free(public_key_);
     EVP_PKEY_free(parameters_);
     EVP_PKEY_free(peer_public_key_);
 }
 
 void DHKeyExchange::InitializeParameters() {
     /* Create the context for parameter generation */
-    if(nullptr == (parameters_context_ = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr))) { ThrowError(); }
+    parameters_context_ = EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr);
+    if(nullptr == parameters_context_) {
+        throw std::runtime_error("cannot initialize key generation context");
+    }
 
+    // todo read about ECDH generation and rewrite if needed
     /* Initialise the parameter generation */
     if(1 != EVP_PKEY_paramgen_init(parameters_context_)) { ThrowError(); }
 
@@ -44,25 +45,16 @@ void DHKeyExchange::GeneratePublicKey() {
     if(nullptr == (key_context_ = EVP_PKEY_CTX_new(parameters_, nullptr))) { ThrowError(); }
 
     /* Generate the key */
-    if(1 != EVP_PKEY_keygen_init(key_context_)) { ThrowError(); }
-    if (1 != EVP_PKEY_keygen(key_context_, &public_key_)) { ThrowError(); }
+    if(EVP_PKEY_keygen_init(key_context_) <= 0) { ThrowError(); }
+    if (EVP_PKEY_keygen(key_context_, &public_key_) <= 0) { ThrowError(); }
 }
 
 std::vector<unsigned char> DHKeyExchange::GetPublicKey() {
-    int len = i2d_PublicKey(public_key_, 0); // with 0 as second arg it gives length
-    std::vector<unsigned char> data(len);
-    unsigned char *ptr = data.data();
-    i2d_PublicKey(public_key_, &ptr);
-    return data;
+    // todo rewrite using evp
 }
 
 void DHKeyExchange::SetPeerPublicKey(std::vector<unsigned char> bytes) {
-    EVP_PKEY_free(peer_public_key_);
-    EC_KEY *ec_key = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
-    peer_public_key_ = EVP_PKEY_new();
-    EVP_PKEY_assign_EC_KEY(peer_public_key_, ec_key);
-    unsigned char const *ptr = bytes.data();
-    d2i_PublicKey(EVP_PKEY_EC, &peer_public_key_, &ptr, (long)bytes.size());
+    // todo rewrite using evp
 }
 
 void DHKeyExchange::DeriveSharedSecret() {

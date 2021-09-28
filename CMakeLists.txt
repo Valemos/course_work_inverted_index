@@ -18,6 +18,7 @@ find_package(Boost 1.77 COMPONENTS thread serialization REQUIRED)
 message("Boost ${Boost_VERSION} found with components ${Boost_LIBRARIES}")
 set(BOOST_FULL_PATH_LIBRARIES /usr/lib/libboost_log-mt.a /usr/lib/libboost_log_setup-mt.a /usr/lib/libboost_thread-mt.a)
 
+
 find_package(OpenSSL)
 if (OPENSSL_FOUND)
     message("OpenSSL " ${OPENSSL_VERSION} " found")
@@ -36,8 +37,12 @@ add_library(encrypted_session
         src/session/AESEncryption.h
         src/session/EncryptedSession.h
         src/session/EncryptedSession.cpp
-        src/session/Errors.cpp src/session/SHA256Algorithm.cpp src/session/SHA256Algorithm.h src/session/RSAKeyPair.cpp src/session/RSAKeyPair.h src/session/RSAKeyParameters.cpp src/session/RSAKeyParameters.h)
-target_link_libraries(encrypted_session OpenSSL::Crypto ${PROJECT_BOOST_LIBRARIES})
+        src/session/Errors.cpp
+        src/session/SHA256Algorithm.cpp
+        src/session/SHA256Algorithm.h
+        src/session/RSAKeyPair.cpp
+        src/session/RSAKeyPair.h)
+target_link_libraries(encrypted_session ~/openssl/libcrypto.so.3 ${PROJECT_BOOST_LIBRARIES})
 
 
 add_executable(client src/index_client/main.cpp src/index_client/IndexSearchClient.cpp)
