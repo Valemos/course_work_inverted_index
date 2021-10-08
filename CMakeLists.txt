@@ -10,14 +10,13 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
+add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY -DCMAKE_BUILD_TYPE=Debug)
 add_definitions(${Boost_LIB_DIAGNOSTIC_DEFINITIONS})
 
 set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.77 COMPONENTS thread serialization REQUIRED)
 message("Boost ${Boost_VERSION} found with components ${Boost_LIBRARIES}")
 set(BOOST_FULL_PATH_LIBRARIES /usr/lib/libboost_log-mt.a /usr/lib/libboost_log_setup-mt.a /usr/lib/libboost_thread-mt.a)
-
 
 find_package(OpenSSL)
 if (OPENSSL_FOUND)
@@ -62,9 +61,10 @@ add_dependencies(client_server client server)
 
 
 # testing
-include(GoogleTest)
-add_executable(tests test/test_index.cpp test/performance.cpp test/test_session.cpp src/index_server/SocketListener.cpp)
-target_link_libraries(tests gtest_main index_lib encrypted_session)
+enable_testing()
+find_package(GTest REQUIRED)
+add_executable(tests test/test_main.cpp test/test_index.cpp test/performance.cpp test/test_session.cpp src/index_server/SocketListener.cpp)
+target_link_libraries(tests GTest::gtest index_lib encrypted_session)
 gtest_discover_tests(tests)
 
 

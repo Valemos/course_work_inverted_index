@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <optional>
+#include <memory>
 #include <functional>
 #include <string>
 #include <openssl/evp.h>
@@ -27,8 +27,8 @@ public:
 private:
     EVP_PKEY *keys_;
 
-    static OSSL_PARAM *GetKeyParameters(std::optional<std::reference_wrapper<const std::vector<unsigned char>>> public_key,
-                                        std::optional<std::reference_wrapper<const std::vector<unsigned char>>> private_key);
+    static OSSL_PARAM *GetKeyParameters(const std::vector<unsigned char> *public_key,
+                                        const std::vector<unsigned char> *private_key);
 
     void SetKeyFromParameters(OSSL_PARAM *parameters);
 
@@ -40,6 +40,10 @@ private:
 
     static std::vector<unsigned char> GetBignumData(OSSL_PARAM *param);
 
-    static void PushParamBuildBignum(OSSL_PARAM_BLD *param_bld, const char *key,
-                                     std::vector<unsigned char> &bytes);
+    static void PushBuildParamBignum(OSSL_PARAM_BLD *param_bld, const char *key,
+                                     const std::vector<unsigned char> &bytes);
+
+    static void
+    PushParamBignumOrEmpty(OSSL_PARAM_BLD *param_bld, const char *key, const std::vector<unsigned char> *data);
+
 };

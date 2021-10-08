@@ -72,6 +72,20 @@ TEST(TestRSA, TestRSAEncryption) {
     ASSERT_EQ(decrypted, data);
 }
 
+TEST(TestRSA, TestRSADecryptionWithOtherKey) {
+    RSAKeyPair encryption;
+    encryption.GenerateKeys();
+
+    std::vector<unsigned char> data {1, 2, 3, 4, 5};
+    auto encrypted = encryption.Encrypt(data);
+    EXPECT_NE(encrypted, data);
+
+    RSAKeyPair other_encryption;
+    other_encryption.GenerateKeys();
+
+    ASSERT_ANY_THROW(other_encryption.Decrypt(encrypted));
+}
+
 TEST(TestRSA, TestSignature) {
     RSAKeyPair key_pair;
     key_pair.GenerateKeys();

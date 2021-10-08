@@ -5,9 +5,16 @@
 #include <openssl/err.h>
 #include <openssl/params.h>
 #include <openssl/param_build.h>
+#include <memory>
 
-#define PRINT_ALL_ERRORS ERR_print_errors_cb([](auto buf, auto size, auto) {std::cout << std::string(buf, size) << std::endl; return 0;}, nullptr)
 
+void show_params(OSSL_PARAM *params) {
+    OSSL_PARAM *cur_param;
+    int i = 0;
+    do {
+        cur_param = &params[i++];
+    } while (cur_param->key != nullptr);
+}
 
 RSAKeyPair::RSAKeyPair() : keys_(nullptr){
 }
@@ -121,7 +128,7 @@ bool RSAKeyPair::Verify(const std::vector<unsigned char> &bytes,
 }
 
 void RSAKeyPair::SetPublicKey(const std::vector<unsigned char> &key) {
-    OSSL_PARAM *parameters = GetKeyParameters({key}, std::nullopt);
+    OSSL_PARAM *parameters = GetKeyParameters(&key, nullptr);
     SetKeyFromParameters(parameters);
     OSSL_PARAM_free(parameters);
 }
@@ -132,41 +139,45 @@ void RSAKeyPair::SetKeyFromParameters(OSSL_PARAM *parameters) {
         throw std::runtime_error("cannot init create key");
 
     EVP_PKEY_free(keys_);
-//    todo fix segfaults on key setting
     if (EVP_PKEY_fromdata(ctx, &keys_, EVP_PKEY_KEYPAIR, parameters) <= 0)
         throw std::runtime_error("cannot create key");
 }
 
 void RSAKeyPair::SetKeys(const std::vector<unsigned char> &public_key, const std::vector<unsigned char> &private_key) {
-    OSSL_PARAM *parameters = GetKeyParameters({public_key}, {private_key});
+    OSSL_PARAM *parameters = GetKeyParameters(&public_key, &private_key);
     SetKeyFromParameters(parameters);
     OSSL_PARAM_free(parameters);
 }
 
-OSSL_PARAM *RSAKeyPair::GetKeyParameters(std::optional<std::reference_wrapper<const std::vector<unsigned char>>> public_key,
-                                         std::optional<std::reference_wrapper<const std::vector<unsigned char>>> private_key) {
+OSSL_PARAM *RSAKeyPair::GetKeyParameters(const std::vector<unsigned char> *public_key,
+                                         const std::vector<unsigned char> *private_key) {
     auto param_bld = OSSL_PARAM_BLD_new();
 
-    if (public_key.has_value()) {
-        auto public_data = public_key.value().get();
-        PushParamBuildBignum(param_bld, "n", public_data);
-    }
+    PushParamBignumOrEmpty(param_bld, "n", public_key);
 
-    if (private_key.has_value()) {
-        auto private_data = private_key.value().get();
-        PushParamBuildBignum(param_bld, "d", private_data);
-    }
+    PushParamBignumOrEmpty(param_bld, "d", private_key);
 
     // default rsa exponent
-    OSSL_PARAM_BLD_push_long(param_bld, "e", RSA_F4);
+    OSSL_PARAM_BLD_push_ulong(param_bld, "e", RSA_F4);
 
     auto parameters = OSSL_PARAM_BLD_to_param(param_bld);
     OSSL_PARAM_BLD_free(param_bld);
 
+    show_params(parameters);
+
     return parameters;
 }
 
-void RSAKeyPair::PushParamBuildBignum(OSSL_PARAM_BLD *param_bld, const char *key, std::vector<unsigned char> &bytes) {
+void RSAKeyPair::PushParamBignumOrEmpty(OSSL_PARAM_BLD *param_bld, const char *key, const std::vector<unsigned char> *data) {
+    if (data != nullptr) {
+        PushBuildParamBignum(param_bld, key, *data);
+    } else {
+        std::vector<unsigned char> empty;
+        PushBuildParamBignum(param_bld, key, empty);
+    }
+}
+
+void RSAKeyPair::PushBuildParamBignum(OSSL_PARAM_BLD *param_bld, const char *key, const std::vector<unsigned char> &bytes) {
     BIGNUM *bignum = BN_bin2bn(bytes.data(), (int)bytes.size(), nullptr);
     OSSL_PARAM_BLD_push_BN(param_bld, key, bignum);
 }
@@ -183,6 +194,8 @@ std::vector<unsigned char> RSAKeyPair::GetNamedParam(EVP_PKEY *key, const std::s
     OSSL_PARAM *param_array;
     if (EVP_PKEY_todata(key, EVP_PKEY_PUBLIC_KEY, &param_array) == 0)
         throw std::runtime_error("cannot read parameters");
+
+    show_params(param_array);
 
     OSSL_PARAM *cur_param;
     int i = 0;
