@@ -184,38 +184,29 @@ std::string Index::ReadTermContext(const TokenPosition& position, int context_ra
 
 std::string Index::ReadTermContext(const fs::path& file_path, std::streamoff word_start, int context_radius)
 {
-    auto left_context_start = std::max(word_start - context_radius, (std::streamoff) 0);
-    auto left_context_size = std::min(word_start, (std::streamoff) context_radius);
-
-    std::stringstream result_stream;
-
     std::ifstream fin(file_path);
-    if (fin.bad()) {
+    if (!fin.is_open()) {
         return ""; 
     }
 
-    fin.seekg(left_context_start);
-
-    std::string context;
-    const char fill_char = ' ';
-    context.resize(left_context_size, fill_char);
-
-    // read context from left
-    fin.get(&context[0], left_context_size);
-    result_stream << context;
+    fin.seekg(word_start);
 
     // read word
     std::string word;
     fin >> word;
-    result_stream << word;
 
-    // read context from right
-    context.replace(0, context.size(), context.size(), fill_char);
-    context.resize(context_radius, fill_char);
-    fin.get(&context[0], context_radius);
-    result_stream << context;
+    // read context around word
+    auto file_size = (long)fs::file_size(file_path);
+    auto context_start = std::clamp(word_start - context_radius, 0L, file_size - 1);
+    auto context_end = std::clamp(word_start + (long)word.length() + context_radius, 0L, file_size - 1);
+    auto read_size = context_end - context_start;
 
-    return result_stream.str();
+    std::string context;
+    context.resize(read_size, 0);
+    fin.seekg(context_start);
+    fin.read(context.data(), read_size);
+
+    return context;
 }
 
 std::optional<std::reference_wrapper<const std::list<TokenPosition>>> Index::GetPositionsForToken(const std::string& token) const

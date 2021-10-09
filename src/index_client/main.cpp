@@ -13,13 +13,11 @@ int main(int, char**) {
 
     do {
         try {
-//            auto address = user_input::promptIpAddress();
-            auto address = ip::make_address("127.0.0.1");
+            auto address = user_input::promptIpAddress();
 
             while (true) {
-//                std::cout << "enter query: " << std::endl;
-//                auto query = user_input::promptOnce();
-                std::string query {"hello"};
+                std::cout << "enter query: " << std::endl;
+                auto query = user_input::promptOnce();
 
                 client.Connect(address, 40000);
                 auto results = client.SearchIndex(query);
