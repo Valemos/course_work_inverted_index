@@ -1,4 +1,6 @@
 #include "EncryptedSession.h"
+#include "RSAKeyPair.h"
+#include "Errors.h"
 #include <utility>
 #include <boost/asio/buffer.hpp>
 #include <valarray>
@@ -6,78 +8,92 @@
 
 EncryptedSession::EncryptedSession(tcp::socket socket) : socket_(std::move(socket)) {}
 
-void EncryptedSession::SendEncrypted(const std::vector<unsigned char> &data) {
-    auto encrypted = message_encryption_.Encrypt(data);
-    SendWithSize(encrypted);
+void EncryptedSession::SendEncrypted(const std::vector<unsigned char> &bytes) {
+    auto encrypted = message_encryption_.Encrypt(bytes.begin(),  bytes.end());
+    SendSizedHashed(encrypted);
 }
 
 std::vector<unsigned char> EncryptedSession::ReceiveEncrypted() {
-    auto encrypted = ReceiveWithSize();
-    return message_encryption_.Decrypt(encrypted);
+    auto encrypted = ReceiveSizedHashed();
+    return message_encryption_.Decrypt(encrypted.begin(),  encrypted.end());
 }
 
-void EncryptedSession::SendWithSize(const std::vector<unsigned char> &data) {
+void EncryptedSession::SendSizedHashed(const std::vector<unsigned char> &data) {
     // send resulting size of serialized data first
-    auto size = data.size();
-    socket_.send(boost::asio::buffer(&size, sizeof(size_t)));
-    SendData(data);
-    // todo add data hashing to ensure integrity
+    SendSize(data.size());
+
+    auto hash = hasher_.HashBytes(data);
+    SendRaw(hash);
+    SendRaw(data);
 }
 
-void EncryptedSession::SendData(const std::vector<unsigned char> &data) {
+void EncryptedSession::SendSize(size_t size) {
+    socket_.send(boost::asio::buffer(&size, sizeof(size_t)));
+}
+
+void EncryptedSession::SendRaw(const std::vector<unsigned char> &data) {
     socket_.send(boost::asio::buffer(data.data(), data.size()));
 }
 
-std::vector<unsigned char> EncryptedSession::ReceiveWithSize() {
-    // todo add data hashing to ensure integrity
-    size_t data_size;
-    socket_.receive(boost::asio::buffer(&data_size, sizeof(size_t)));
-
-    return ReceiveData(data_size);
+std::vector<unsigned char> EncryptedSession::ReceiveSizedHashed() {
+    size_t data_size = ReceiveSize();
+    auto hash = ReceiveRaw(SHA256Algorithm::HASH_SIZE);
+    auto data = ReceiveRaw(data_size);
+    if (hasher_.HashBytes(data) != hash) {
+        throw std::runtime_error("received incorrect data");
+    }
+    return data;
 }
 
-std::vector<unsigned char> EncryptedSession::ReceiveData(size_t data_size) {
+size_t EncryptedSession::ReceiveSize() {
+    size_t data_size;
+    socket_.receive(boost::asio::buffer(&data_size, sizeof(size_t)));
+    return data_size;
+}
+
+std::vector<unsigned char> EncryptedSession::ReceiveRaw(size_t data_size) {
     std::vector<unsigned char> data(data_size, 0);
     socket_.receive(boost::asio::buffer(data, data_size));
     return data;
 }
 
 void EncryptedSession::StartCommunication() {
-//    todo change key exchange process
-    DHKeyExchange exchange{AESEncryption::KEY_SIZE};
-    exchange.InitializeParameters();
-    exchange.GeneratePublicKey();
+    RSAKeyPair client_rsa;
+    client_rsa.GenerateKeys();
+    auto server_rsa = RSAKeyPair::LoadPublicKey("./keys_server/id_rsa.pub");
 
-    // order of sending or accepting public key matters
-    auto public_key = exchange.GetPublicKey();
-    SendData(public_key);
-    exchange.SetPeerPublicKey(ReceiveData(public_key.size()));
+    message_encryption_.GenerateKey();
+    auto private_key = message_encryption_.GetPrivateKey();
 
-    exchange.DeriveSharedSecret();
-    auto key_bytes = exchange.GetSharedSecret();
-    SetPrivateKey(key_bytes);
+    auto public_key = client_rsa.GetPublicKey();
+    SendRaw(public_key);
+
+    // sign with client's private key and encrypt with server key
+    auto signature = client_rsa.SignDigest(private_key.begin(),  private_key.end());
+    private_key.insert(private_key.begin(), signature.begin(),  signature.end());
+    auto encrypted_key = server_rsa.Encrypt(private_key.begin(),  private_key.end());
+
+    SendSize(encrypted_key.size());
+    SendRaw(encrypted_key);
 }
 
 void EncryptedSession::AcceptCommunication() {
-//    todo change key exchange process
-    DHKeyExchange exchange{AESEncryption::KEY_SIZE};
-    exchange.InitializeParameters();
-    exchange.GeneratePublicKey();
+    auto server_rsa = RSAKeyPair::LoadFiles("./keys_server/id_rsa.pub", "./keys_server/id_rsa");
 
-    // order of sending or accepting public key matters
-    auto public_key = exchange.GetPublicKey();
-    exchange.SetPeerPublicKey(ReceiveData(public_key.size()));
-    SendData(public_key);
+    RSAKeyPair client_certificate;
+    auto client_public_key = ReceiveRaw(RSAKeyPair::KEY_SIZE);
+    client_certificate.SetPublicKey(client_public_key);
 
-    exchange.DeriveSharedSecret();
-    auto key_bytes = exchange.GetSharedSecret();
-    SetPrivateKey(key_bytes);
-}
+    auto message_size = ReceiveSize();
+    auto encrypted_key = ReceiveRaw(message_size);
+    auto signed_key = server_rsa.Decrypt(encrypted_key.begin(), encrypted_key.end());
 
-void EncryptedSession::SetPrivateKey(std::vector<unsigned char> &key_bytes) {
-    AESEncryption::KeyType key_array;
-    memcpy(key_array.data(), key_bytes.data(), key_bytes.size());
-    message_encryption_.SetPrivateKey(key_array);
+    auto signature_end = signed_key.begin() + RSAKeyPair::SIGNATURE_SIZE;
+    if (client_certificate.VerifyDigest(signature_end, signed_key.end(), signed_key.begin(), signature_end)) {
+        message_encryption_.SetPrivateKey(signature_end, signed_key.end());
+    } else {
+        throw key_exchange_error("key verification failed");
+    }
 }
 
 std::string EncryptedSession::ReceiveString() {

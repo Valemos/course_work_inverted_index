@@ -13,11 +13,13 @@ int main(int, char**) {
 
     do {
         try {
-            auto address = user_input::promptIpAddress();
-            
+//            auto address = user_input::promptIpAddress();
+            auto address = ip::make_address("127.0.0.1");
+
             while (true) {
-                std::cout << "enter query: " << std::endl;
-                auto query = user_input::promptOnce();
+//                std::cout << "enter query: " << std::endl;
+//                auto query = user_input::promptOnce();
+                std::string query {"hello"};
 
                 client.Connect(address, 40000);
                 auto results = client.SearchIndex(query);
@@ -25,7 +27,7 @@ int main(int, char**) {
                 client.Disconnect();
             };
         
-        } catch (boost::system::system_error& err) {
+        } catch (std::runtime_error& err) {
             client.Disconnect();
             BOOST_LOG_TRIVIAL(error) << err.what() << std::endl;
         }

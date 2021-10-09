@@ -40,7 +40,8 @@ add_library(encrypted_session
         src/session/SHA256Algorithm.cpp
         src/session/SHA256Algorithm.h
         src/session/RSAKeyPair.cpp
-        src/session/RSAKeyPair.h)
+        src/session/RSAKeyPair.h
+        src/session/ossl_parameter_utils.h)
 target_link_libraries(encrypted_session ~/openssl/libcrypto.so.3 ${PROJECT_BOOST_LIBRARIES})
 
 
@@ -59,6 +60,8 @@ target_link_libraries(create_index index_lib ${PROJECT_BOOST_LIBRARIES})
 add_custom_target(client_server)
 add_dependencies(client_server client server)
 
+add_executable(rsa_keygen rsa_keygen.cpp)
+target_link_libraries(rsa_keygen encrypted_session ${PROJECT_BOOST_LIBRARIES})
 
 # testing
 enable_testing()

@@ -1,6 +1,8 @@
 #include "IndexSearchServer.h"
 
 #include <boost/log/trivial.hpp>
+#include <session/Errors.h>
+#include <iostream>
 #include "session/index_serialization.h"
 
 
@@ -21,9 +23,13 @@ void IndexSearchServer::OpenSessionFromSocket(tcp::socket sock) {
                     << sock.remote_endpoint().port()
                     << " connection requested";
 
-    EncryptedSession session{std::move(sock)};
-    session.AcceptCommunication();
-    HandleClientSession(session);
+    try {
+        EncryptedSession session{std::move(sock)};
+        session.AcceptCommunication();
+        HandleClientSession(session);
+    } catch (std::runtime_error &err) {
+        BOOST_LOG_TRIVIAL(error) << err.what() << std::endl;
+    }
 }
 
 void IndexSearchServer::HandleClientSession(EncryptedSession &session) {

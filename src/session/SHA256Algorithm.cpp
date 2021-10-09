@@ -1,41 +1,39 @@
+#include <openssl/evp.h>
+#include <stdexcept>
 #include "SHA256Algorithm.h"
 
 
 SHA256Algorithm::SHA256Algorithm() {
-    Init();
+    hash_context_ = EVP_MD_CTX_create();
+    Reset();
 }
 
 SHA256Algorithm::~SHA256Algorithm() {
-    delete hash_context_;
-}
-
-void SHA256Algorithm::Init() {
-    hash_context_ = new SHA256_CTX;
-    SHA256_Init(hash_context_);
-    hash_.clear();
-    hash_.resize(SHA256_DIGEST_LENGTH);
+    EVP_MD_CTX_free(hash_context_);
 }
 
 std::vector<unsigned char> SHA256Algorithm::HashBytes(const std::vector<unsigned char> &bytes) {
-    Init();
     Update(bytes);
     Finalize();
     return hash_;
 }
 
 void SHA256Algorithm::Update(const std::vector<unsigned char> &bytes) {
-    if (hash_context_ == nullptr) { Init(); }
-    SHA256_Update(hash_context_, bytes.data(), bytes.size());
+    EVP_DigestUpdate(hash_context_, bytes.data(), bytes.size());
 }
 
 void SHA256Algorithm::Finalize() {
-    SHA256_Final(hash_.data(), hash_context_);
+    EVP_DigestFinal_ex(hash_context_, hash_.data(), nullptr);
     Reset();
 }
 
 void SHA256Algorithm::Reset() {
-    delete hash_context_;
-    hash_context_ = nullptr;
+    EVP_MD_CTX_reset(hash_context_);
+    if (1 != EVP_DigestInit_ex(hash_context_, EVP_sha256(), nullptr))
+        throw std::runtime_error("failed to initialize hashing");
+
+    hash_.clear();
+    hash_.resize(SHA256Algorithm::HASH_SIZE, 0);
 }
 
 std::vector<unsigned char> SHA256Algorithm::GetFinalHash() {

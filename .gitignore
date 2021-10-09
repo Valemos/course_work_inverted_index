@@ -3,3 +3,5 @@
 **.index
 /.vscode/
 /cmake-build-debug/
+/keys_client/
+/keys_server/

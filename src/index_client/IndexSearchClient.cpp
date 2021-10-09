@@ -12,9 +12,14 @@ void IndexSearchClient::Connect(const boost::asio::ip::address& address, unsigne
     tcp::socket new_connection_socket(service_);
     new_connection_socket.connect(server_ep);
 
-    session_ = new EncryptedSession(std::move(new_connection_socket));
-    session_->StartCommunication();
-    BOOST_LOG_TRIVIAL(debug) << "client connected" << std::endl;
+    try {
+        session_ = new EncryptedSession(std::move(new_connection_socket));
+        session_->StartCommunication();
+        BOOST_LOG_TRIVIAL(debug) << "client connected" << std::endl;
+    } catch (std::runtime_error &err) {
+        BOOST_LOG_TRIVIAL(error) << err.what() << std::endl;
+        delete session_;
+    }
 }
 
 void IndexSearchClient::Disconnect()
