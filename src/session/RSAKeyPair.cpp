@@ -6,6 +6,9 @@
 #include <openssl/param_build.h>
 #include <fstream>
 
+#include <iostream>
+#include <openssl/err.h>
+#define PRINT_ALL_ERRORS ERR_print_errors_cb([](auto buf, auto size, auto) {std::cout << std::string(buf, size) << std::endl; return 0;}, nullptr)
 
 RSAKeyPair::RSAKeyPair() : keys_(nullptr){
 }
@@ -52,7 +55,10 @@ std::vector<unsigned char> RSAKeyPair::Encrypt(std::vector<unsigned char>::itera
     encrypted.resize(encrypted_len, 0);
 
     if (EVP_PKEY_encrypt(ctx, encrypted.data(), &encrypted_len, &*bytes_begin, bytes_size) <= 0)
+    {
+        PRINT_ALL_ERRORS;
         throw std::runtime_error("failed to encrypt");
+    }
     encrypted.resize(encrypted_len, 0);
 
     return encrypted;
@@ -88,9 +94,8 @@ std::vector<unsigned char> RSAKeyPair::Decrypt(std::vector<unsigned char>::itera
 std::vector<unsigned char> RSAKeyPair::SignDigest(std::vector<unsigned char>::iterator bytes_begin,
                                                   std::vector<unsigned char>::iterator bytes_end) {
     auto md_ctx = EVP_MD_CTX_new();
-    auto key_ctx = EVP_PKEY_CTX_new(keys_, nullptr);
 
-    if (EVP_DigestSignInit(md_ctx, &key_ctx, EVP_sha256(), nullptr, keys_) <= 0)
+    if (EVP_DigestSignInit(md_ctx, nullptr, EVP_sha256(), nullptr, keys_) <= 0)
         throw std::runtime_error("cannot init digest and sign context");
 
     long bytes_size = std::distance(bytes_begin, bytes_end);
@@ -107,6 +112,8 @@ std::vector<unsigned char> RSAKeyPair::SignDigest(std::vector<unsigned char>::it
     if (EVP_DigestSignFinal(md_ctx, signature.data(), &signature_size) <= 0)
         throw std::runtime_error("cannot sign final digest");
     signature.resize(signature_size);
+
+    EVP_MD_CTX_free(md_ctx);
 
     return signature;
 }

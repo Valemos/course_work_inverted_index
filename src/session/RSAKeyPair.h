@@ -11,7 +11,7 @@
 class RSAKeyPair {
 public:
     static constexpr int KEY_SIZE = 256;
-    static constexpr int SIGNATURE_SIZE = SHA256_DIGEST_LENGTH;
+    static constexpr int SIGNATURE_SIZE = 256;
 
     RSAKeyPair();
     ~RSAKeyPair();

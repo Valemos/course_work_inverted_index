@@ -70,7 +70,8 @@ void EncryptedSession::StartCommunication() {
 
     // sign with client's private key and encrypt with server key
     auto signature = client_rsa.SignDigest(private_key.begin(),  private_key.end());
-    private_key.insert(private_key.begin(), signature.begin(),  signature.end());
+    SendRaw(signature);
+
     auto encrypted_key = server_rsa.Encrypt(private_key.begin(),  private_key.end());
 
     SendSize(encrypted_key.size());
@@ -84,13 +85,14 @@ void EncryptedSession::AcceptCommunication() {
     auto client_public_key = ReceiveRaw(RSAKeyPair::KEY_SIZE);
     client_certificate.SetPublicKey(client_public_key);
 
+    auto signature = ReceiveRaw(RSAKeyPair::SIGNATURE_SIZE);
+
     auto message_size = ReceiveSize();
     auto encrypted_key = ReceiveRaw(message_size);
-    auto signed_key = server_rsa.Decrypt(encrypted_key.begin(), encrypted_key.end());
+    auto private_key = server_rsa.Decrypt(encrypted_key.begin(), encrypted_key.end());
 
-    auto signature_end = signed_key.begin() + RSAKeyPair::SIGNATURE_SIZE;
-    if (client_certificate.VerifyDigest(signature_end, signed_key.end(), signed_key.begin(), signature_end)) {
-        message_encryption_.SetPrivateKey(signature_end, signed_key.end());
+    if (client_certificate.VerifyDigest(private_key.begin(), private_key.end(), signature.begin(), signature.end())) {
+        message_encryption_.SetPrivateKey(private_key.begin(), private_key.end());
     } else {
         throw key_exchange_error("key verification failed");
     }
