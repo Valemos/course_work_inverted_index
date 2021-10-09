@@ -58,21 +58,17 @@ std::vector<unsigned char> EncryptedSession::ReceiveRaw(size_t data_size) {
 }
 
 void EncryptedSession::StartCommunication() {
-    RSAKeyPair client_rsa;
-    client_rsa.GenerateKeys();
-    auto server_rsa = RSAKeyPair::LoadPublicKey("./keys_server/id_rsa.pub");
+    auto client_rsa = RSAKeyPair::LoadFiles("./keys_client/id_rsa.pub", "./keys_client/id_rsa");
+    auto server_certificate = RSAKeyPair::LoadPublicKey("./keys_server/id_rsa.pub");
 
     message_encryption_.GenerateKey();
     auto private_key = message_encryption_.GetPrivateKey();
-
-    auto public_key = client_rsa.GetPublicKey();
-    SendRaw(public_key);
 
     // sign with client's private key and encrypt with server key
     auto signature = client_rsa.SignDigest(private_key.begin(),  private_key.end());
     SendRaw(signature);
 
-    auto encrypted_key = server_rsa.Encrypt(private_key.begin(),  private_key.end());
+    auto encrypted_key = server_certificate.Encrypt(private_key.begin(), private_key.end());
 
     SendSize(encrypted_key.size());
     SendRaw(encrypted_key);
@@ -80,10 +76,7 @@ void EncryptedSession::StartCommunication() {
 
 void EncryptedSession::AcceptCommunication() {
     auto server_rsa = RSAKeyPair::LoadFiles("./keys_server/id_rsa.pub", "./keys_server/id_rsa");
-
-    RSAKeyPair client_certificate;
-    auto client_public_key = ReceiveRaw(RSAKeyPair::KEY_SIZE);
-    client_certificate.SetPublicKey(client_public_key);
+    auto client_certificate = RSAKeyPair::LoadPublicKey("./keys_client/id_rsa.pub");
 
     auto signature = ReceiveRaw(RSAKeyPair::SIGNATURE_SIZE);
 
